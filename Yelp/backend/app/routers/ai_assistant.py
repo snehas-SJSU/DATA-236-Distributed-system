@@ -12,6 +12,7 @@ from ..services.ai_parser import parse_user_intent
 from ..services.ai_ranker import score_restaurant
 from ..services.ai_live_search import get_live_context
 from ..services.ai_text_utils import normalize_user_text
+from ..services.ai_langchain_parser import parse_user_intent_with_langchain
 
 router = APIRouter(prefix="/ai-assistant", tags=["ai-assistant"])
 
@@ -326,8 +327,13 @@ def chat_with_ai(
     effective_message = build_effective_message(message, conversation_history)
     effective_message = normalize_user_text(effective_message)
 
-    # Parse user intent and apply small follow-up override rules.
-    parsed_intent = parse_user_intent(effective_message)
+    
+    # Parse user intent with LangChain first, then fall back to the local parser.
+    try:
+        parsed_intent = parse_user_intent_with_langchain(effective_message)
+    except Exception:
+        parsed_intent = parse_user_intent(effective_message)
+
     parsed_intent = apply_follow_up_overrides(message, parsed_intent)
     needs_live_info = needs_live_context(effective_message)
 
