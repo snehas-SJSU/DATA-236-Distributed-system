@@ -71,6 +71,8 @@ def chat_with_ai(
     parsed_intent = parse_user_intent(message)
     needs_live_info = needs_live_context(message)
 
+    live_context = ""
+
     query = db.query(Restaurant)
 
     if parsed_intent["cuisines"]:
@@ -88,22 +90,32 @@ def chat_with_ai(
         query = query.filter(or_(*cuisine_filters))
 
     elif message.strip():
-        words = [word.strip().lower() for word in message.split() if len(word.strip()) > 2]
+        words = [
+            word.strip().lower()
+            for word in message.split()
+            if len(word.strip()) > 2
+        ]
 
         keyword_filters = []
         for word in words:
             keyword_filters.append(Restaurant.name.ilike(f"%{word}%"))
             keyword_filters.append(Restaurant.cuisine_type.ilike(f"%{word}%"))
             keyword_filters.append(Restaurant.description.ilike(f"%{word}%"))
-            keyword_filters.append(cast(Restaurant.keywords, Text).ilike(f"%{word}%"))
+            keyword_filters.append(
+                cast(Restaurant.keywords, Text).ilike(f"%{word}%")
+            )
 
         if keyword_filters:
             query = query.filter(or_(*keyword_filters))
 
     if parsed_intent["price_range"]:
-        query = query.filter(Restaurant.price_range == parsed_intent["price_range"])
+        query = query.filter(
+            Restaurant.price_range == parsed_intent["price_range"]
+        )
     elif user_preferences["price_range"]:
-        query = query.filter(Restaurant.price_range == user_preferences["price_range"])
+        query = query.filter(
+            Restaurant.price_range == user_preferences["price_range"]
+        )
 
     all_dietary = parsed_intent["dietary"] or user_preferences["dietary"]
     for item in all_dietary:
@@ -126,6 +138,9 @@ def chat_with_ai(
         )
 
     restaurants = query.limit(20).all()
+
+    if not restaurants and needs_live_info:
+        restaurants = db.query(Restaurant).limit(20).all()
 
     scored_results = []
     for restaurant in restaurants:
@@ -152,17 +167,28 @@ def chat_with_ai(
             }
         )
 
+    if needs_live_info and recommendations:
+        top_city = recommendations[0]["city"]
+        live_context = get_live_context(message, top_city)
+
     if recommendations:
         names = [item["name"] for item in recommendations]
         reply = (
             f"Hi {current_user.name}, I found {len(recommendations)} option(s) for you. "
             f"Top match: {', '.join(names)}."
         )
+
+        if live_context:
+            reply += f" {live_context}"
+
     else:
         reply = (
             f"Hi {current_user.name}, I could not find a strong match yet. "
             "Try changing cuisine, price, or vibe."
         )
+
+        if live_context:
+            reply += f" {live_context}"
 
     return {
         "reply": reply,
