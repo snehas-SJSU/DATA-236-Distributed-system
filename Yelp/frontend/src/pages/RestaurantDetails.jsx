@@ -275,16 +275,22 @@ export default function RestaurantDetails() {
                   marginBottom: 18,
                 }}
               >
-                {(restaurant.keywords || []).map((item) => (
-                  <span key={item} style={chip}>
+                {(restaurant.keywords || []).slice(0, 8).map((item) => (
+                  <span key={`kw-${item}`} style={chip}>
                     {item}
                   </span>
                 ))}
-                {(restaurant.amenities || []).map((item) => (
-                  <span key={item} style={chipAlt}>
+
+                {(restaurant.amenities || []).slice(0, 4).map((item) => (
+                  <span key={`am-${item}`} style={chipAlt}>
                     {item}
                   </span>
                 ))}
+
+                {((restaurant.keywords || []).length > 8 ||
+                  (restaurant.amenities || []).length > 4) && (
+                  <span style={moreChip}>+ more</span>
+                )}
               </div>
             )}
 
@@ -683,6 +689,18 @@ const chipAlt = {
   ...chip,
   background: "#fff5f5",
   color: "#b91c1c",
+};
+
+const moreChip = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "5px 10px",
+  borderRadius: 999,
+  background: "#f9f9f9",
+  color: "#777",
+  fontSize: 12,
+  fontWeight: 700,
+  border: "1px solid #e5e5e5",
 };
 
 const sectionTitle = {
