@@ -2,6 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { aiAPI } from "../services/api";
 
+const QUICK_ACTIONS = [
+  "Find dinner tonight",
+  "Best rated near me",
+  "Vegan options",
+];
+
 export default function ChatPanel() {
   const navigate = useNavigate();
 
@@ -11,24 +17,29 @@ export default function ChatPanel() {
   const [error, setError] = useState("");
   const [lastResponse, setLastResponse] = useState(null);
 
-  const sendMessage = async (e) => {
-    e.preventDefault();
+  const sendMessage = async (eOrText) => {
+    if (typeof eOrText !== "string") {
+      eOrText?.preventDefault?.();
+    }
 
-    if (!message.trim()) return;
+    const textToSend = typeof eOrText === "string" ? eOrText : message.trim();
+
+    if (!textToSend) return;
 
     const userMessage = {
       role: "user",
-      content: message,
+      content: textToSend,
     };
 
     const nextHistory = [...history, userMessage];
 
     setLoading(true);
     setError("");
+    setMessage("");
 
     try {
       const res = await aiAPI.chat({
-        message,
+        message: textToSend,
         conversation_history: history,
       });
 
@@ -39,7 +50,6 @@ export default function ChatPanel() {
 
       setHistory([...nextHistory, assistantMessage]);
       setLastResponse(res.data);
-      setMessage("");
     } catch (err) {
       setError(err.response?.data?.detail || "Could not get AI response");
     } finally {
@@ -86,7 +96,7 @@ export default function ChatPanel() {
               color: "#222",
             }}
           >
-            AI Restaurant Assistant
+            Sparky ⭐
           </h3>
           <p
             style={{
@@ -100,6 +110,7 @@ export default function ChatPanel() {
         </div>
 
         <button
+          aria-label="Clear chat"
           onClick={clearChat}
           style={{
             background: "#fff",
@@ -112,7 +123,7 @@ export default function ChatPanel() {
             fontFamily: "inherit",
           }}
         >
-          New Chat
+          Clear Chat
         </button>
       </div>
 
@@ -195,6 +206,7 @@ export default function ChatPanel() {
               {lastResponse.recommendations.map((item) => (
                 <button
                   key={item.id}
+                  aria-label={`Open restaurant ${item.name}`}
                   onClick={() => navigate(`/restaurant/${item.id}`)}
                   style={{
                     textAlign: "left",
@@ -253,11 +265,45 @@ export default function ChatPanel() {
         )}
       </div>
 
+      {history.length === 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            flexWrap: "wrap",
+            marginBottom: "12px",
+            flexShrink: 0,
+          }}
+        >
+          {QUICK_ACTIONS.map((action) => (
+            <button
+              key={action}
+              type="button"
+              onClick={() => sendMessage(action)}
+              style={{
+                background: "#fff",
+                border: "1px solid #d6d6d6",
+                borderRadius: "999px",
+                padding: "8px 12px",
+                fontSize: "12px",
+                fontWeight: "600",
+                color: "#555",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              {action}
+            </button>
+          ))}
+        </div>
+      )}
+
       <form
         onSubmit={sendMessage}
         style={{ display: "flex", gap: "10px", flexShrink: 0 }}
       >
         <input
+          aria-label="Ask for restaurant recommendations"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Ask for restaurant recommendations..."
@@ -274,6 +320,7 @@ export default function ChatPanel() {
         />
 
         <button
+          aria-label="Send message"
           type="submit"
           disabled={loading}
           style={{
