@@ -16,6 +16,7 @@ from ..services.ai_text_utils import normalize_user_text
 router = APIRouter(prefix="/ai-assistant", tags=["ai-assistant"])
 
 
+# Safely read JSON text fields from saved user preferences.
 def parse_json_list(value):
     if not value:
         return []
@@ -29,6 +30,7 @@ def parse_json_list(value):
         return []
 
 
+# Detect whether the user is asking for live or time-sensitive info.
 def needs_live_context(message: str) -> bool:
     text = (message or "").lower()
 
@@ -51,6 +53,7 @@ def needs_live_context(message: str) -> bool:
     return any(keyword in text for keyword in live_keywords)
 
 
+# Detect simple price-refinement follow-up messages.
 def is_price_follow_up(message: str) -> bool:
     text = (message or "").lower()
     return (
@@ -61,6 +64,7 @@ def is_price_follow_up(message: str) -> bool:
     )
 
 
+# Build a stronger message for follow-up queries. This helps preserve earlier user intent.
 def build_effective_message(message: str, conversation_history: list) -> str:
     current = (message or "").strip()
     if not current:
@@ -85,6 +89,9 @@ def build_effective_message(message: str, conversation_history: list) -> str:
         "make it cheaper",
         "make it casual",
         "make it more romantic",
+        "then make it cheaper",
+        "make it better",
+        "show me another",
     ]
 
     current_lower = current.lower()
@@ -104,10 +111,42 @@ def build_effective_message(message: str, conversation_history: list) -> str:
     if not previous_user_messages:
         return current
 
-    recent_context = " ".join(previous_user_messages[-2:])
+    recent_context = " ".join(previous_user_messages[-2:]).strip()
+
+    preserved_parts = []
+
+    important_terms = [
+        "romantic",
+        "anniversary",
+        "date",
+        "date night",
+        "special occasion",
+        "birthday",
+        "vegan",
+        "vegetarian",
+        "casual",
+        "fine dining",
+        "upscale",
+        "coffee",
+        "breakfast",
+        "brunch",
+    ]
+
+    recent_context_lower = recent_context.lower()
+
+    for term in important_terms:
+        if term in recent_context_lower and term not in preserved_parts:
+            preserved_parts.append(term)
+
+    preserved_context = " ".join(preserved_parts).strip()
+
+    if preserved_context:
+        return f"{recent_context}. Important context: {preserved_context}. {current}"
+
     return f"{recent_context}. {current}"
 
 
+# Apply small override rules for short follow-up refinements.
 def apply_follow_up_overrides(message: str, parsed_intent: dict) -> dict:
     text = (message or "").lower()
 
@@ -121,6 +160,7 @@ def apply_follow_up_overrides(message: str, parsed_intent: dict) -> dict:
     return updated_intent
 
 
+# Pull a few strong context words from the effective message.
 def get_context_keywords(message: str) -> list[str]:
     text = (message or "").lower()
 
@@ -137,6 +177,7 @@ def get_context_keywords(message: str) -> list[str]:
     return keywords
 
 
+# Give a small score boost when restaurant text matches important conversation context.
 def boost_score_for_context(
     restaurant: Restaurant, effective_message: str
 ) -> tuple[float, list[str]]:
@@ -173,6 +214,7 @@ def boost_score_for_context(
     return score_boost, extra_reasons
 
 
+# Add explanation phrases so follow-up responses still reflect earlier user context.
 def get_follow_up_context_reasons(message: str, effective_message: str) -> list[str]:
     reasons = []
     message_text = (message or "").lower()
@@ -190,8 +232,10 @@ def get_follow_up_context_reasons(message: str, effective_message: str) -> list[
     return reasons
 
 
+# Build a more natural top reply sentence based on the detected intent.
 def build_reply_intro(
     current_user_name: str,
+    original_message: str,
     effective_message: str,
     parsed_intent: dict,
     recommendations: list[dict],
@@ -200,56 +244,58 @@ def build_reply_intro(
     names = [item["name"] for item in recommendations]
     names_text = ", ".join(names)
 
+    original_text = (original_message or "").lower()
     text = (effective_message or "").lower()
     occasions = parsed_intent.get("occasions", [])
     ambiance = parsed_intent.get("ambiance", [])
     dietary = parsed_intent.get("dietary", [])
     price_range = parsed_intent.get("price_range")
 
+    # Give price follow-up wording higher priority than generic romantic wording.
+    if is_price_follow_up(original_text):
+        if "anniversary" in occasions and "romantic" in ambiance:
+            return (
+                f"For a more affordable romantic anniversary dinner, I’d suggest: {names_text}."
+            )
+
+        if "anniversary" in occasions:
+            return (
+                f"Here are some more affordable anniversary options I found: {names_text}."
+            )
+
+        if "romantic" in ambiance or "date" in occasions or "date night" in occasions:
+            return (
+                f"For a more affordable romantic dinner, I’d suggest: {names_text}."
+            )
+
+        return f"Here are some more affordable options I found: {names_text}."
+
     if "anniversary" in occasions and "romantic" in ambiance:
-        return (
-            f"For a romantic anniversary dinner, I’d suggest: {names_text}."
-        )
+        return f"For a romantic anniversary dinner, I’d suggest: {names_text}."
 
     if "anniversary" in occasions:
-        return (
-            f"These look like strong choices for your anniversary: {names_text}."
-        )
+        return f"These look like strong choices for your anniversary: {names_text}."
 
     if "romantic" in ambiance or "date" in occasions or "date night" in occasions:
-        return (
-            f"For a romantic dinner, I’d suggest: {names_text}."
-        )
+        return f"For a romantic dinner, I’d suggest: {names_text}."
 
     if "vegan" in dietary or "vegan" in text:
-        return (
-            f"Here are some vegan-friendly options I found: {names_text}."
-        )
+        return f"Here are some vegan-friendly options I found: {names_text}."
 
     if "vegetarian" in dietary or "vegetarian" in text:
-        return (
-            f"Here are some vegetarian-friendly options I found: {names_text}."
-        )
+        return f"Here are some vegetarian-friendly options I found: {names_text}."
 
-    if is_price_follow_up(text) or price_range == "$":
-        return (
-            f"Here are some more affordable options I found: {names_text}."
-        )
+    if price_range == "$":
+        return f"Here are some more affordable options I found: {names_text}."
 
     if needs_live_info and "open now" in text:
-        return (
-            f"Here are some restaurant options to check right now: {names_text}."
-        )
+        return f"Here are some restaurant options to check right now: {names_text}."
 
     if needs_live_info and "trending" in text:
-        return (
-            f"These look like strong restaurant picks right now: {names_text}."
-        )
+        return f"These look like strong restaurant picks right now: {names_text}."
 
     if needs_live_info and ("event" in text or "events" in text or "tonight" in text):
-        return (
-            f"These look like good options to consider for tonight: {names_text}."
-        )
+        return f"These look like good options to consider for tonight: {names_text}."
 
     return (
         f"Hi {current_user_name}, I found {len(recommendations)} option(s) for you. "
@@ -263,6 +309,7 @@ def chat_with_ai(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Read request data and saved user preferences.
     message = payload.message
     conversation_history = payload.conversation_history
 
@@ -275,17 +322,21 @@ def chat_with_ai(
         "sort_by": current_user.pref_sort_by,
     }
 
+    # Build the message that the parser and search logic will actually use.
     effective_message = build_effective_message(message, conversation_history)
     effective_message = normalize_user_text(effective_message)
 
+    # Parse user intent and apply small follow-up override rules.
     parsed_intent = parse_user_intent(effective_message)
     parsed_intent = apply_follow_up_overrides(message, parsed_intent)
     needs_live_info = needs_live_context(effective_message)
 
     live_context = ""
 
+    # Start building the restaurant query.
     query = db.query(Restaurant)
 
+    # Filter by parsed cuisines first, then fallback to saved cuisine preferences.
     if parsed_intent["cuisines"]:
         cuisine_filters = [
             Restaurant.cuisine_type.ilike(f"%{cuisine}%")
@@ -300,6 +351,7 @@ def chat_with_ai(
         ]
         query = query.filter(or_(*cuisine_filters))
 
+    # If no cuisine filter exists, do a broader keyword-style search.
     elif effective_message.strip():
         words = [
             word.strip().lower()
@@ -312,11 +364,14 @@ def chat_with_ai(
             keyword_filters.append(Restaurant.name.ilike(f"%{word}%"))
             keyword_filters.append(Restaurant.cuisine_type.ilike(f"%{word}%"))
             keyword_filters.append(Restaurant.description.ilike(f"%{word}%"))
-            keyword_filters.append(cast(Restaurant.keywords, Text).ilike(f"%{word}%"))
+            keyword_filters.append(
+                cast(Restaurant.keywords, Text).ilike(f"%{word}%")
+            )
 
         if keyword_filters:
             query = query.filter(or_(*keyword_filters))
 
+    # Filter by parsed price or fallback to saved price preference.
     if parsed_intent["price_range"]:
         query = query.filter(
             Restaurant.price_range == parsed_intent["price_range"]
@@ -326,6 +381,7 @@ def chat_with_ai(
             Restaurant.price_range == user_preferences["price_range"]
         )
 
+    # Apply dietary filters.
     all_dietary = parsed_intent["dietary"] or user_preferences["dietary"]
     for item in all_dietary:
         query = query.filter(
@@ -336,6 +392,7 @@ def chat_with_ai(
             )
         )
 
+    # Apply ambiance filters.
     all_ambiance = parsed_intent["ambiance"] or user_preferences["ambiance"]
     for item in all_ambiance:
         query = query.filter(
@@ -346,8 +403,10 @@ def chat_with_ai(
             )
         )
 
+    # Run the main query.
     restaurants = query.limit(20).all()
 
+    # If a price follow-up becomes too strict, retry with a lighter query.
     if not restaurants and is_price_follow_up(message):
         relaxed_query = db.query(Restaurant)
 
@@ -365,9 +424,11 @@ def chat_with_ai(
 
         restaurants = relaxed_query.limit(20).all()
 
+    # If no DB result is found but the query is live/time-sensitive, fallback broadly.
     if not restaurants and needs_live_info:
         restaurants = db.query(Restaurant).limit(20).all()
 
+    # Score each restaurant and collect matching reasons.
     scored_results = []
     for restaurant in restaurants:
         score, reasons = score_restaurant(
@@ -388,10 +449,12 @@ def chat_with_ai(
 
         scored_results.append((restaurant, score, combined_reasons))
 
+    # Sort best matches first.
     scored_results.sort(key=lambda item: item[1], reverse=True)
 
     follow_up_reasons = get_follow_up_context_reasons(message, effective_message)
 
+    # Build final recommendation objects for the top results.
     recommendations = []
     for restaurant, score, reasons in scored_results[:3]:
         priority_reasons = []
@@ -422,13 +485,16 @@ def chat_with_ai(
             }
         )
 
+    # Add live context text when needed.
     if needs_live_info and recommendations:
         top_city = recommendations[0]["city"]
         live_context = get_live_context(effective_message, top_city)
 
+    # Build the final reply text.
     if recommendations:
         reply = build_reply_intro(
             current_user.name,
+            message,
             effective_message,
             parsed_intent,
             recommendations,
