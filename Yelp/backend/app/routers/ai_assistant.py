@@ -27,6 +27,28 @@ def parse_json_list(value):
         return []
 
 
+def needs_live_context(message: str) -> bool:
+    text = (message or "").lower()
+
+    live_keywords = [
+        "open now",
+        "open right now",
+        "hours",
+        "closing time",
+        "opening time",
+        "currently open",
+        "right now",
+        "event",
+        "events",
+        "tonight",
+        "today",
+        "trending",
+        "popular now",
+    ]
+
+    return any(keyword in text for keyword in live_keywords)
+
+
 @router.post("/chat", response_model=AIChatResponse)
 def chat_with_ai(
     payload: AIChatRequest,
@@ -46,6 +68,7 @@ def chat_with_ai(
     }
 
     parsed_intent = parse_user_intent(message)
+    needs_live_info = needs_live_context(message)
 
     query = db.query(Restaurant)
 
