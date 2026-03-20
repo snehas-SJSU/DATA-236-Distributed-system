@@ -190,6 +190,73 @@ def get_follow_up_context_reasons(message: str, effective_message: str) -> list[
     return reasons
 
 
+def build_reply_intro(
+    current_user_name: str,
+    effective_message: str,
+    parsed_intent: dict,
+    recommendations: list[dict],
+    needs_live_info: bool,
+) -> str:
+    names = [item["name"] for item in recommendations]
+    names_text = ", ".join(names)
+
+    text = (effective_message or "").lower()
+    occasions = parsed_intent.get("occasions", [])
+    ambiance = parsed_intent.get("ambiance", [])
+    dietary = parsed_intent.get("dietary", [])
+    price_range = parsed_intent.get("price_range")
+
+    if "anniversary" in occasions and "romantic" in ambiance:
+        return (
+            f"For a romantic anniversary dinner, I’d suggest: {names_text}."
+        )
+
+    if "anniversary" in occasions:
+        return (
+            f"These look like strong choices for your anniversary: {names_text}."
+        )
+
+    if "romantic" in ambiance or "date" in occasions or "date night" in occasions:
+        return (
+            f"For a romantic dinner, I’d suggest: {names_text}."
+        )
+
+    if "vegan" in dietary or "vegan" in text:
+        return (
+            f"Here are some vegan-friendly options I found: {names_text}."
+        )
+
+    if "vegetarian" in dietary or "vegetarian" in text:
+        return (
+            f"Here are some vegetarian-friendly options I found: {names_text}."
+        )
+
+    if is_price_follow_up(text) or price_range == "$":
+        return (
+            f"Here are some more affordable options I found: {names_text}."
+        )
+
+    if needs_live_info and "open now" in text:
+        return (
+            f"Here are some restaurant options to check right now: {names_text}."
+        )
+
+    if needs_live_info and "trending" in text:
+        return (
+            f"These look like strong restaurant picks right now: {names_text}."
+        )
+
+    if needs_live_info and ("event" in text or "events" in text or "tonight" in text):
+        return (
+            f"These look like good options to consider for tonight: {names_text}."
+        )
+
+    return (
+        f"Hi {current_user_name}, I found {len(recommendations)} option(s) for you. "
+        f"Top match: {names_text}."
+    )
+
+
 @router.post("/chat", response_model=AIChatResponse)
 def chat_with_ai(
     payload: AIChatRequest,
@@ -360,10 +427,12 @@ def chat_with_ai(
         live_context = get_live_context(effective_message, top_city)
 
     if recommendations:
-        names = [item["name"] for item in recommendations]
-        reply = (
-            f"Hi {current_user.name}, I found {len(recommendations)} option(s) for you. "
-            f"Top match: {', '.join(names)}."
+        reply = build_reply_intro(
+            current_user.name,
+            effective_message,
+            parsed_intent,
+            recommendations,
+            needs_live_info,
         )
 
         if live_context:

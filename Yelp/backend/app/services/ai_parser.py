@@ -51,6 +51,9 @@ def parse_user_intent(message: str):
         "coffee",
         "cafe",
         "café",
+        "intimate",
+        "elegant",
+        "candlelight",
     ]
 
     occasion_words = [
@@ -63,6 +66,9 @@ def parse_user_intent(message: str):
         "breakfast",
         "brunch",
         "celebration",
+        "special occasion",
+        "romantic dinner",
+        "family dinner",
     ]
 
     found_cuisines = [item for item in cuisines if item in text]
@@ -94,9 +100,14 @@ def parse_user_intent(message: str):
             ]
         ):
             price_range = "$"
-        elif any(word in text for word in ["mid-range", "mid range", "moderate"]):
+        elif any(
+            word in text for word in ["mid-range", "mid range", "moderate"]
+        ):
             price_range = "$$"
-        elif any(word in text for word in ["expensive", "upscale", "fancy", "fine dining"]):
+        elif any(
+            word in text
+            for word in ["expensive", "upscale", "fancy", "fine dining"]
+        ):
             price_range = "$$$"
 
     if "romantic" in text and "romantic" not in found_ambiance:
@@ -108,6 +119,24 @@ def parse_user_intent(message: str):
     if "date night" in text:
         if "date night" not in found_occasions:
             found_occasions.append("date night")
+        if "romantic" not in found_ambiance:
+            found_ambiance.append("romantic")
+
+    if "date" in text and "date" not in found_occasions:
+        found_occasions.append("date")
+        if "romantic" not in found_ambiance:
+            found_ambiance.append("romantic")
+
+    if "special occasion" in text and "special occasion" not in found_occasions:
+        found_occasions.append("special occasion")
+
+    if "celebration" in text and "celebration" not in found_occasions:
+        found_occasions.append("celebration")
+
+    if "birthday" in text and "birthday" not in found_occasions:
+        found_occasions.append("birthday")
+
+    if any(word in text for word in ["intimate", "candlelight", "elegant"]):
         if "romantic" not in found_ambiance:
             found_ambiance.append("romantic")
 

@@ -96,7 +96,7 @@ export default function ChatPanel() {
               color: "#222",
             }}
           >
-            Sparky ⭐
+            Sparky 🤖
           </h3>
           <p
             style={{

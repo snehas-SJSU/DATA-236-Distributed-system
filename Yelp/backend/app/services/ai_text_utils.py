@@ -31,7 +31,7 @@ SYNONYM_MAP = {
     "budget friendly": "budget",
     "date night": "romantic",
     "special occasion": "anniversary",
-    "veg": "vegetarian",
+    "veg": "vegan",
     "plant based": "vegan",
     "tea house": "coffee",
     "noodle": "noodles",
