@@ -71,6 +71,10 @@ def chat_with_ai(
     parsed_intent = parse_user_intent(message)
     needs_live_info = needs_live_context(message)
 
+    live_context = ""
+    if needs_live_info:
+        live_context = get_live_context(message)
+
     query = db.query(Restaurant)
 
     if parsed_intent["cuisines"]:
