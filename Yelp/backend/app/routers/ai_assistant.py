@@ -11,6 +11,7 @@ from ..schemas import AIChatRequest, AIChatResponse
 from ..services.ai_parser import parse_user_intent
 from ..services.ai_ranker import score_restaurant
 from ..services.ai_live_search import get_live_context
+from ..services.ai_text_utils import normalize_user_text
 
 router = APIRouter(prefix="/ai-assistant", tags=["ai-assistant"])
 
@@ -61,10 +62,6 @@ def is_price_follow_up(message: str) -> bool:
 
 
 def build_effective_message(message: str, conversation_history: list) -> str:
-    """
-    Build a better message for follow-up queries by combining
-    the latest user message with previous user messages.
-    """
     current = (message or "").strip()
     if not current:
         return ""
@@ -140,11 +137,9 @@ def get_context_keywords(message: str) -> list[str]:
     return keywords
 
 
-def boost_score_for_context(restaurant: Restaurant, effective_message: str) -> tuple[float, list[str]]:
-    """
-    Give a small score boost when the restaurant text looks aligned
-    with important context words from the conversation.
-    """
+def boost_score_for_context(
+    restaurant: Restaurant, effective_message: str
+) -> tuple[float, list[str]]:
     score_boost = 0.0
     extra_reasons = []
 
@@ -179,10 +174,6 @@ def boost_score_for_context(restaurant: Restaurant, effective_message: str) -> t
 
 
 def get_follow_up_context_reasons(message: str, effective_message: str) -> list[str]:
-    """
-    Add soft explanation text so follow-up results still reflect
-    the earlier conversational context.
-    """
     reasons = []
     message_text = (message or "").lower()
     effective_text = (effective_message or "").lower()
@@ -218,6 +209,7 @@ def chat_with_ai(
     }
 
     effective_message = build_effective_message(message, conversation_history)
+    effective_message = normalize_user_text(effective_message)
 
     parsed_intent = parse_user_intent(effective_message)
     parsed_intent = apply_follow_up_overrides(message, parsed_intent)
@@ -253,9 +245,7 @@ def chat_with_ai(
             keyword_filters.append(Restaurant.name.ilike(f"%{word}%"))
             keyword_filters.append(Restaurant.cuisine_type.ilike(f"%{word}%"))
             keyword_filters.append(Restaurant.description.ilike(f"%{word}%"))
-            keyword_filters.append(
-                cast(Restaurant.keywords, Text).ilike(f"%{word}%")
-            )
+            keyword_filters.append(cast(Restaurant.keywords, Text).ilike(f"%{word}%"))
 
         if keyword_filters:
             query = query.filter(or_(*keyword_filters))
@@ -347,7 +337,11 @@ def chat_with_ai(
             if reason and reason not in priority_reasons:
                 priority_reasons.append(reason)
 
-        final_reason = ", ".join(priority_reasons[:2]) if priority_reasons else "looks like a strong overall match"
+        final_reason = (
+            ", ".join(priority_reasons[:2])
+            if priority_reasons
+            else "looks like a strong overall match"
+        )
 
         recommendations.append(
             {

@@ -1,5 +1,9 @@
+from .ai_text_utils import normalize_user_text
+
+
 def parse_user_intent(message: str):
-    text = (message or "").lower()
+    normalized_text = normalize_user_text(message)
+    text = normalized_text.lower()
 
     cuisines = [
         "italian",
