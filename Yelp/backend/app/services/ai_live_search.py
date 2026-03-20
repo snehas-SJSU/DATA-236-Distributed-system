@@ -4,7 +4,22 @@ from tavily import TavilyClient
 
 
 def build_live_query(message: str, location: str = "") -> str:
-    text = (message or "").strip()
+    text = (message or "").strip().lower()
+
+    if "trending" in text or "popular now" in text:
+        if location:
+            return f"trending restaurants in {location} today"
+        return "trending restaurants today"
+
+    if "event" in text or "events" in text or "tonight" in text or "today" in text:
+        if location:
+            return f"restaurant events in {location} tonight"
+        return "restaurant events tonight"
+
+    if "open now" in text or "hours" in text or "currently open" in text:
+        if location:
+            return f"restaurants open now in {location}"
+        return "restaurants open now"
 
     if location:
         return f"{text} restaurants in {location}"
@@ -12,28 +27,54 @@ def build_live_query(message: str, location: str = "") -> str:
     return f"{text} restaurants"
 
 
-def summarize_live_results(items: list[dict], location: str = "") -> str:
+def summarize_live_results(query: str, items: list[dict], location: str = "") -> str:
     if not items:
         return ""
 
-    titles = []
-    for item in items[:3]:
-        title = (item.get("title") or "").strip()
-        if title:
-            titles.append(title)
+    text = (query or "").lower()
 
-    if not titles:
-        return ""
+    if "trending" in text or "popular now" in text:
+        if location:
+            return (
+                f"Live info: I found current web results related to trending restaurants "
+                f"in {location}. Popularity can change quickly, so check recent reviews before visiting."
+            )
+        return (
+            "Live info: I found current web results related to trending restaurants. "
+            "Popularity can change quickly, so check recent reviews before visiting."
+        )
+
+    if "event" in text or "events" in text or "tonight" in text or "today" in text:
+        if location:
+            return (
+                f"Live info: I found current web results related to restaurant events "
+                f"in {location}. Please verify timing and availability before going."
+            )
+        return (
+            "Live info: I found current web results related to restaurant events. "
+            "Please verify timing and availability before going."
+        )
+
+    if "open now" in text or "hours" in text or "currently open" in text:
+        if location:
+            return (
+                f"Live info: I found current web results related to restaurant availability "
+                f"in {location}. Please double-check hours before visiting."
+            )
+        return (
+            "Live info: I found current web results related to restaurant availability. "
+            "Please double-check hours before visiting."
+        )
 
     if location:
         return (
-            f"Live info: I found current web results related to restaurant availability "
-            f"in {location}. Please double-check hours before visiting."
+            f"Live info: I found current web results related to restaurants in {location}. "
+            "Please verify details before visiting."
         )
 
     return (
-        "Live info: I found current web results related to restaurant availability. "
-        "Please double-check hours before visiting."
+        "Live info: I found current web results related to restaurants. "
+        "Please verify details before visiting."
     )
 
 
@@ -61,7 +102,7 @@ def get_live_context(query: str, location: str = "") -> str:
         )
 
         items = result.get("results", [])
-        return summarize_live_results(items, location)
+        return summarize_live_results(query, items, location)
 
     except Exception:
         return ""
