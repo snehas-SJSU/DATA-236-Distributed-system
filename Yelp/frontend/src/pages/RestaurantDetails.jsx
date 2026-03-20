@@ -17,6 +17,8 @@ export default function RestaurantDetails() {
 
   const [editingReview, setEditingReview] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [confirmDeleteReviewId, setConfirmDeleteReviewId] = useState(null);
+  const [deleteSaving, setDeleteSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -38,6 +40,14 @@ export default function RestaurantDetails() {
     load();
   }, [load]);
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/");
+    }
+  };
+
   const toggleFavorite = async () => {
     try {
       if (restaurant.is_favorited) {
@@ -49,6 +59,7 @@ export default function RestaurantDetails() {
         ...prev,
         is_favorited: !prev.is_favorited,
       }));
+      setMsg("");
     } catch (err) {
       setMsg(err.response?.data?.detail || "Could not update favorites");
     }
@@ -60,6 +71,7 @@ export default function RestaurantDetails() {
       rating: review.rating,
       comment: review.comment || "",
     });
+    setMsg("");
   };
 
   const saveEditReview = async (e) => {
@@ -73,6 +85,7 @@ export default function RestaurantDetails() {
         comment: editingReview.comment,
       });
       setEditingReview(null);
+      setMsg("Review updated successfully.");
       await load();
     } catch (err) {
       setMsg(err.response?.data?.detail || "Could not update review");
@@ -82,12 +95,16 @@ export default function RestaurantDetails() {
   };
 
   const deleteReview = async (reviewId) => {
-    if (!window.confirm("Delete this review?")) return;
+    setDeleteSaving(true);
     try {
       await reviewAPI.delete(reviewId);
+      setConfirmDeleteReviewId(null);
+      setMsg("Review deleted successfully.");
       await load();
     } catch (err) {
       setMsg(err.response?.data?.detail || "Could not delete review");
+    } finally {
+      setDeleteSaving(false);
     }
   };
 
@@ -105,9 +122,7 @@ export default function RestaurantDetails() {
   };
 
   if (loading) {
-    return (
-      <div style={{ padding: 40, fontFamily: "sans-serif" }}>Loading…</div>
-    );
+    return <div style={{ padding: 40, fontFamily: "sans-serif" }}>Loading…</div>;
   }
 
   if (!restaurant) {
@@ -132,25 +147,58 @@ export default function RestaurantDetails() {
       <Navbar
         onSearch={({ find, near }) =>
           navigate(
-            `/search?q=${encodeURIComponent(find || "Restaurants")}&loc=${encodeURIComponent(near || "")}`,
+            `/search?q=${encodeURIComponent(
+              find || "Restaurants"
+            )}&loc=${encodeURIComponent(near || "")}`
           )
         }
         defaultFind=""
         defaultNear={restaurant.city || ""}
       />
 
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 24px 60px" }}>
+      <main
+        style={{ maxWidth: 1120, margin: "0 auto", padding: "0 24px 60px" }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: owner ? "space-between" : "flex-start",
+            alignItems: "center",
+            marginTop: 22,
+            marginBottom: 16,
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <button onClick={handleBack} style={backBtn}>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+            Back
+          </button>
+
+          {owner && (
+            <button
+              onClick={() => navigate("/owner/dashboard")}
+              style={secondaryBtn}
+            >
+              Back to Dashboard
+            </button>
+          )}
+        </div>
+
         {heroImage && (
           <img
             src={heroImage}
-            alt={restaurant.name}
-            style={{
-              width: "100%",
-              height: 360,
-              objectFit: "cover",
-              borderRadius: 12,
-              marginTop: 20,
-            }}
+            alt={`${restaurant.name} main photo`}
+            className="hero-img w-full object-cover rounded-xl mt-2"
           />
         )}
 
@@ -167,7 +215,7 @@ export default function RestaurantDetails() {
               <img
                 key={idx}
                 src={photo}
-                alt={`${restaurant.name} ${idx + 2}`}
+                alt={`${restaurant.name} photo ${idx + 2}`}
                 style={{
                   height: 120,
                   width: 160,
@@ -180,29 +228,13 @@ export default function RestaurantDetails() {
           </div>
         )}
 
-        {owner && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              marginTop: 22,
-              marginBottom: 16,
-            }}
-          >
-            <button
-              onClick={() => navigate("/owner/dashboard")}
-              style={secondaryBtn}
-            >
-              Back to Dashboard
-            </button>
-          </div>
-        )}
-
         <div
+          className="details-layout"
           style={{
             display: "grid",
-            gridTemplateColumns: "1.6fr 0.9fr",
             gap: 28,
+            gridTemplateColumns: "1.6fr 0.9fr",
+            marginTop: 18,
           }}
         >
           <div>
@@ -275,22 +307,16 @@ export default function RestaurantDetails() {
                   marginBottom: 18,
                 }}
               >
-                {(restaurant.keywords || []).slice(0, 8).map((item) => (
-                  <span key={`kw-${item}`} style={chip}>
+                {(restaurant.keywords || []).map((item) => (
+                  <span key={item} style={chip}>
                     {item}
                   </span>
                 ))}
-
-                {(restaurant.amenities || []).slice(0, 4).map((item) => (
-                  <span key={`am-${item}`} style={chipAlt}>
+                {(restaurant.amenities || []).map((item) => (
+                  <span key={item} style={chipAlt}>
                     {item}
                   </span>
                 ))}
-
-                {((restaurant.keywords || []).length > 8 ||
-                  (restaurant.amenities || []).length > 4) && (
-                  <span style={moreChip}>+ more</span>
-                )}
               </div>
             )}
 
@@ -346,9 +372,13 @@ export default function RestaurantDetails() {
               <div
                 style={{
                   marginBottom: 16,
-                  color: msg.toLowerCase().includes("success")
-                    ? "#166534"
-                    : "#d32323",
+                  color:
+                    msg.toLowerCase().includes("success") ||
+                    msg.toLowerCase().includes("claimed") ||
+                    msg.toLowerCase().includes("deleted") ||
+                    msg.toLowerCase().includes("updated")
+                      ? "#166534"
+                      : "#d32323",
                   fontWeight: 700,
                   fontSize: 14,
                 }}
@@ -357,7 +387,7 @@ export default function RestaurantDetails() {
               </div>
             )}
 
-            <section>
+            <section aria-label="Reviews">
               <h2 style={sectionTitle}>Reviews ({reviews.length})</h2>
 
               {reviews.length === 0 ? (
@@ -529,7 +559,7 @@ export default function RestaurantDetails() {
                               <img
                                 key={i}
                                 src={url}
-                                alt="review"
+                                alt={`Review photo ${i + 1}`}
                                 style={{
                                   height: 80,
                                   width: 110,
@@ -555,7 +585,7 @@ export default function RestaurantDetails() {
                             </button>
 
                             <button
-                              onClick={() => deleteReview(review.id)}
+                              onClick={() => setConfirmDeleteReviewId(review.id)}
                               style={{
                                 ...secondaryBtn,
                                 padding: "7px 12px",
@@ -576,7 +606,7 @@ export default function RestaurantDetails() {
             </section>
           </div>
 
-          <aside>
+          <aside aria-label="Restaurant information">
             <div
               style={{
                 border: "1px solid #e6e6e6",
@@ -616,10 +646,7 @@ export default function RestaurantDetails() {
                 label="Email"
                 value={restaurant.contact_email || "Not provided"}
               />
-              <Info
-                label="Hours"
-                value={restaurant.hours_text || "Not provided"}
-              />
+              <HoursInfo hoursText={restaurant.hours_text} />
               <Info
                 label="Price range"
                 value={restaurant.price_range || "Not provided"}
@@ -647,7 +674,53 @@ export default function RestaurantDetails() {
             </div>
           </aside>
         </div>
-      </div>
+      </main>
+
+      {confirmDeleteReviewId && (
+        <div style={modalOverlay}>
+          <div style={modalCard}>
+            <h3
+              style={{
+                margin: "0 0 8px",
+                fontSize: 18,
+                fontWeight: 800,
+                color: "#2d2d2d",
+              }}
+            >
+              Delete review?
+            </h3>
+
+            <p
+              style={{
+                margin: "0 0 18px",
+                fontSize: 14,
+                color: "#666",
+                lineHeight: 1.5,
+              }}
+            >
+              This action cannot be undone.
+            </p>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button
+                onClick={() => setConfirmDeleteReviewId(null)}
+                disabled={deleteSaving}
+                style={modalCancelBtn}
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() => deleteReview(confirmDeleteReviewId)}
+                disabled={deleteSaving}
+                style={modalDeleteBtn}
+              >
+                {deleteSaving ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -674,6 +747,69 @@ function Info({ label, value }) {
   );
 }
 
+function HoursInfo({ hoursText }) {
+  if (!hoursText) {
+    return <Info label="Hours" value="Not provided" />;
+  }
+
+  const days = hoursText
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div
+        style={{
+          fontSize: 12,
+          color: "#888",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: 0.5,
+          marginBottom: 6,
+        }}
+      >
+        Hours
+      </div>
+      <div>
+        {days.map((entry, i) => {
+          const colonIdx = entry.indexOf(":");
+          if (colonIdx === -1) {
+            return (
+              <div
+                key={i}
+                style={{ fontSize: 14, color: "#333", padding: "2px 0" }}
+              >
+                {entry}
+              </div>
+            );
+          }
+          const day = entry.slice(0, colonIdx).trim();
+          const time = entry.slice(colonIdx + 1).trim();
+          return (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 13,
+                padding: "3px 0",
+                borderBottom:
+                  i < days.length - 1 ? "1px solid #f5f5f5" : "none",
+              }}
+            >
+              <span style={{ fontWeight: 700, color: "#555", width: 36 }}>
+                {day}
+              </span>
+              <span style={{ color: "#333" }}>{time}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const chip = {
   display: "inline-flex",
   alignItems: "center",
@@ -689,18 +825,6 @@ const chipAlt = {
   ...chip,
   background: "#fff5f5",
   color: "#b91c1c",
-};
-
-const moreChip = {
-  display: "inline-flex",
-  alignItems: "center",
-  padding: "5px 10px",
-  borderRadius: 999,
-  background: "#f9f9f9",
-  color: "#777",
-  fontSize: 12,
-  fontWeight: 700,
-  border: "1px solid #e5e5e5",
 };
 
 const sectionTitle = {
@@ -734,4 +858,61 @@ const secondaryBtn = {
   fontSize: 14,
   fontFamily:
     "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif",
+};
+
+const backBtn = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  background: "none",
+  border: "none",
+  color: "#666",
+  cursor: "pointer",
+  fontSize: 14,
+  fontWeight: 800,
+  padding: 0,
+  fontFamily:
+    "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif",
+};
+
+const modalOverlay = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,0.35)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 1000,
+};
+
+const modalCard = {
+  width: 360,
+  maxWidth: "calc(100vw - 32px)",
+  background: "#fff",
+  borderRadius: 14,
+  padding: 20,
+  boxShadow: "0 18px 40px rgba(0,0,0,0.18)",
+  border: "1px solid #ececec",
+};
+
+const modalCancelBtn = {
+  background: "#fff",
+  border: "1px solid #ddd",
+  color: "#444",
+  padding: "9px 14px",
+  borderRadius: 10,
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: "pointer",
+};
+
+const modalDeleteBtn = {
+  background: "#d32323",
+  border: "none",
+  color: "#fff",
+  padding: "9px 14px",
+  borderRadius: 10,
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: "pointer",
 };

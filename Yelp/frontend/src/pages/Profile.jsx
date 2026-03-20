@@ -20,6 +20,15 @@ const countries = [
   "Ukraine", "United Arab Emirates", "Venezuela", "Vietnam", "Zimbabwe",
 ];
 
+const US_STATES = [
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
+  "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
+  "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
+  "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY",
+  "DC","PR","GU","VI","AS","MP",
+];
+
 const genders = ["Male", "Female", "Other", "Prefer not to say"];
 
 const CUISINES = ["Italian", "Chinese", "Mexican", "Indian", "Japanese", "American"];
@@ -149,9 +158,15 @@ export default function Profile() {
     }
   };
 
+  // Keep search bar location in sync with the user's saved preferred location
+  useEffect(() => {
+    const saved = getUserLocation();
+    if (saved) setNear(saved);
+  }, [user]);
+
   const handleSearch = (e) => {
     e.preventDefault();
-    navigate(`/?q=${encodeURIComponent(find || "Restaurants")}&loc=${encodeURIComponent(near)}`);
+    navigate(`/search?q=${encodeURIComponent(find || "Restaurants")}&loc=${encodeURIComponent(near)}`);
   };
 
   const handleChange = (e) => {
@@ -313,9 +328,10 @@ export default function Profile() {
                 height: "44px",
                 background: "#fff",
                 borderRadius: "4px",
-                overflow: "hidden",
+                overflow: "visible",
                 boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
                 border: "1px solid #e5e5e5",
+                position: "relative",
               }}
             >
               <div
@@ -364,6 +380,10 @@ export default function Profile() {
                 <CityAutocomplete
                   value={near}
                   onChange={(city) => setNear(city)}
+                  onSelect={(city) => {
+                    setNear(city);
+                    navigate(`/search?q=${encodeURIComponent(find || "Restaurants")}&loc=${encodeURIComponent(city)}`);
+                  }}
                   placeholder="city..."
                   inputStyle={{
                     height: "30px", border: "none", borderRadius: "0",
@@ -404,7 +424,7 @@ export default function Profile() {
               }}
               ref={menuRef}
             >
-              {["Yelp for Business"].map((t) => (
+              {/* {["Yelp for Business"].map((t) => (
                 <a
                   key={t}
                   href="#"
@@ -412,7 +432,7 @@ export default function Profile() {
                 >
                   {t}
                 </a>
-              ))}
+              ))} */}
               <button
                 onClick={() => navigate("/write-review")}
                 style={{ background: "transparent", border: "none", cursor: "pointer", color: "#333", fontSize: "13px", fontWeight: "600", padding: "6px 10px", whiteSpace: "nowrap", fontFamily: "inherit" }}
@@ -523,13 +543,11 @@ export default function Profile() {
       </div>
 
       <div
+        className="profile-layout"
         style={{
           maxWidth: "1180px",
           margin: "0 auto",
           padding: "28px 24px 50px",
-          display: "grid",
-          gridTemplateColumns: "260px 1fr",
-          gap: "24px",
         }}
       >
         <aside>
@@ -664,6 +682,15 @@ export default function Profile() {
         </aside>
 
         <main>
+          {/* Back button */}
+          <button
+            onClick={() => navigate(-1)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#888", fontSize: 13, fontWeight: 600, padding: "0 0 14px", display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit" }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
+            Back
+          </button>
+
           {!showEdit && !showPrefs ? (
             <>
               <h1
@@ -700,13 +727,7 @@ export default function Profile() {
                   marginBottom: "24px",
                 }}
               >
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 0,
-                  }}
-                >
+                <div className="form-grid-2" style={{ gap: 0 }}>
                   <OverviewCell label="Name" value={form.name || "—"} />
                   <OverviewCell label="Email" value={form.email || "—"} />
                   <OverviewCell label="Phone Number" value={form.phone_number || "—"} />
@@ -763,7 +784,7 @@ export default function Profile() {
                   overflow: "hidden",
                   marginBottom: "24px",
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
                 }}
               >
                 <QuickLinkCard title="History" subtitle="See your previous reviews and restaurants added" onClick={() => navigate("/history")} />
@@ -833,7 +854,12 @@ export default function Profile() {
                 </Field>
 
                 <Field label="State (abbreviated)">
-                  <Input name="state" value={form.state} onChange={handleChange} placeholder="CA" />
+                  <select name="state" value={form.state} onChange={handleChange} style={inputStyle}>
+                    <option value="">Select state</option>
+                    {US_STATES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </Field>
 
                 <Field label="Country">

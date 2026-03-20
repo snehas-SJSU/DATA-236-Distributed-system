@@ -2,64 +2,44 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { aiAPI } from "../services/api";
 
-/* -------------------------------------------------------
-   Quick prompts shown when chat is empty
--------------------------------------------------------- */
-const QUICK_ACTIONS = [
-  "Find dinner tonight",
-  "Best rated near me",
-  "Vegan options",
-];
-
 export default function ChatPanel() {
   const navigate = useNavigate();
 
-  /* -------------------------------------------------------
-     Chat state
-  -------------------------------------------------------- */
   const [message, setMessage] = useState("");
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [lastResponse, setLastResponse] = useState(null);
 
-  /* -------------------------------------------------------
-     Send a message to the AI assistant
-     - supports both form submit and quick action click
-     - stores recommendations inside the assistant message
-  -------------------------------------------------------- */
-  const sendMessage = async (eOrText) => {
-    if (typeof eOrText !== "string") {
-      eOrText?.preventDefault?.();
-    }
+  const sendMessage = async (e) => {
+    e.preventDefault();
 
-    const textToSend = typeof eOrText === "string" ? eOrText : message.trim();
-
-    if (!textToSend) return;
+    if (!message.trim()) return;
 
     const userMessage = {
       role: "user",
-      content: textToSend,
+      content: message,
     };
 
     const nextHistory = [...history, userMessage];
 
     setLoading(true);
     setError("");
-    setMessage("");
 
     try {
       const res = await aiAPI.chat({
-        message: textToSend,
+        message,
         conversation_history: history,
       });
 
       const assistantMessage = {
         role: "assistant",
         content: res.data.reply,
-        recommendations: res.data.recommendations || [],
       };
 
       setHistory([...nextHistory, assistantMessage]);
+      setLastResponse(res.data);
+      setMessage("");
     } catch (err) {
       setError(err.response?.data?.detail || "Could not get AI response");
     } finally {
@@ -67,11 +47,9 @@ export default function ChatPanel() {
     }
   };
 
-  /* -------------------------------------------------------
-     Clear the whole chat
-  -------------------------------------------------------- */
   const clearChat = () => {
     setHistory([]);
+    setLastResponse(null);
     setMessage("");
     setError("");
   };
@@ -89,9 +67,6 @@ export default function ChatPanel() {
         flexDirection: "column",
       }}
     >
-      {/* -------------------------------------------------------
-         Header
-      -------------------------------------------------------- */}
       <div
         style={{
           display: "flex",
@@ -111,7 +86,7 @@ export default function ChatPanel() {
               color: "#222",
             }}
           >
-            Sparky 🤖
+            AI Restaurant Assistant
           </h3>
           <p
             style={{
@@ -125,7 +100,6 @@ export default function ChatPanel() {
         </div>
 
         <button
-          aria-label="Clear chat"
           onClick={clearChat}
           style={{
             background: "#fff",
@@ -138,13 +112,10 @@ export default function ChatPanel() {
             fontFamily: "inherit",
           }}
         >
-          Clear Chat
+          New Chat
         </button>
       </div>
 
-      {/* -------------------------------------------------------
-         Chat history area
-      -------------------------------------------------------- */}
       <div
         style={{
           flex: 1,
@@ -166,126 +137,37 @@ export default function ChatPanel() {
           </div>
         ) : (
           history.map((item, index) => (
-            <div key={index} style={{ marginBottom: "14px" }}>
-              {/* -------------------------------
-                 Message bubble
-              -------------------------------- */}
+            <div
+              key={index}
+              style={{
+                marginBottom: "10px",
+                display: "flex",
+                justifyContent:
+                  item.role === "user" ? "flex-end" : "flex-start",
+              }}
+            >
               <div
                 style={{
-                  display: "flex",
-                  justifyContent:
-                    item.role === "user" ? "flex-end" : "flex-start",
+                  maxWidth: "80%",
+                  background: item.role === "user" ? "#d32323" : "#fff",
+                  color: item.role === "user" ? "#fff" : "#333",
+                  border: item.role === "user" ? "none" : "1px solid #e3e3e3",
+                  borderRadius: "12px",
+                  padding: "10px 12px",
+                  fontSize: "14px",
+                  lineHeight: 1.5,
+                  boxShadow:
+                    item.role === "user"
+                      ? "none"
+                      : "0 2px 8px rgba(0,0,0,0.04)",
                 }}
               >
-                <div
-                  style={{
-                    maxWidth: "80%",
-                    background: item.role === "user" ? "#d32323" : "#fff",
-                    color: item.role === "user" ? "#fff" : "#333",
-                    border: item.role === "user" ? "none" : "1px solid #e3e3e3",
-                    borderRadius: "12px",
-                    padding: "10px 12px",
-                    fontSize: "14px",
-                    lineHeight: 1.5,
-                    boxShadow:
-                      item.role === "user"
-                        ? "none"
-                        : "0 2px 8px rgba(0,0,0,0.04)",
-                  }}
-                >
-                  {item.content}
-                </div>
+                {item.content}
               </div>
-
-              {/* -------------------------------
-                 Recommendation cards
-                 These now stay attached to the
-                 assistant message they belong to
-              -------------------------------- */}
-              {item.role === "assistant" &&
-                item.recommendations?.length > 0 && (
-                  <div style={{ marginTop: "12px" }}>
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: "800",
-                        color: "#333",
-                        marginBottom: "10px",
-                      }}
-                    >
-                      Recommendations
-                    </div>
-
-                    <div style={{ display: "grid", gap: "10px" }}>
-                      {item.recommendations.map((restaurant) => (
-                        <button
-                          key={restaurant.id}
-                          aria-label={`Open restaurant ${restaurant.name}`}
-                          onClick={() =>
-                            navigate(`/restaurant/${restaurant.id}`)
-                          }
-                          style={{
-                            textAlign: "left",
-                            background: "#fff",
-                            border: "1px solid #e5e5e5",
-                            borderRadius: "10px",
-                            padding: "12px",
-                            cursor: "pointer",
-                            fontFamily: "inherit",
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontSize: "16px",
-                              fontWeight: "800",
-                              color: "#0073bb",
-                              marginBottom: "4px",
-                            }}
-                          >
-                            {restaurant.name}
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: "13px",
-                              color: "#666",
-                              marginBottom: "6px",
-                            }}
-                          >
-                            {restaurant.cuisine_type} • {restaurant.city} •{" "}
-                            {restaurant.price_range || "N/A"}
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: "13px",
-                              color: "#444",
-                              marginBottom: "4px",
-                            }}
-                          >
-                            Rating: {restaurant.average_rating ?? 0}
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: "13px",
-                              color: "#777",
-                            }}
-                          >
-                            Why: {restaurant.reason}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
             </div>
           ))
         )}
 
-        {/* -------------------------------------------------------
-           Loading + error state
-        -------------------------------------------------------- */}
         {loading && (
           <div style={{ color: "#999", fontSize: "14px" }}>Thinking...</div>
         )}
@@ -295,53 +177,87 @@ export default function ChatPanel() {
             {error}
           </div>
         )}
-      </div>
 
-      {/* -------------------------------------------------------
-         Quick actions only when chat is empty
-      -------------------------------------------------------- */}
-      {history.length === 0 && (
-        <div
-          style={{
-            display: "flex",
-            gap: "8px",
-            flexWrap: "wrap",
-            marginBottom: "12px",
-            flexShrink: 0,
-          }}
-        >
-          {QUICK_ACTIONS.map((action) => (
-            <button
-              key={action}
-              type="button"
-              onClick={() => sendMessage(action)}
+        {lastResponse?.recommendations?.length > 0 && (
+          <div style={{ marginTop: "14px" }}>
+            <div
               style={{
-                background: "#fff",
-                border: "1px solid #d6d6d6",
-                borderRadius: "999px",
-                padding: "8px 12px",
-                fontSize: "12px",
-                fontWeight: "600",
-                color: "#555",
-                cursor: "pointer",
-                fontFamily: "inherit",
+                fontSize: "14px",
+                fontWeight: "800",
+                color: "#333",
+                marginBottom: "10px",
               }}
             >
-              {action}
-            </button>
-          ))}
-        </div>
-      )}
+              Recommendations
+            </div>
 
-      {/* -------------------------------------------------------
-         Input area
-      -------------------------------------------------------- */}
+            <div style={{ display: "grid", gap: "10px" }}>
+              {lastResponse.recommendations.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => navigate(`/restaurant/${item.id}`)}
+                  style={{
+                    textAlign: "left",
+                    background: "#fff",
+                    border: "1px solid #e5e5e5",
+                    borderRadius: "10px",
+                    padding: "12px",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "800",
+                      color: "#0073bb",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    {item.name}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "#666",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    {item.cuisine_type} • {item.city} •{" "}
+                    {item.price_range || "N/A"}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "#444",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Rating: {item.average_rating ?? 0}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "#777",
+                    }}
+                  >
+                    Why: {item.reason}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       <form
         onSubmit={sendMessage}
         style={{ display: "flex", gap: "10px", flexShrink: 0 }}
       >
         <input
-          aria-label="Ask for restaurant recommendations"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Ask for restaurant recommendations..."
@@ -358,7 +274,6 @@ export default function ChatPanel() {
         />
 
         <button
-          aria-label="Send message"
           type="submit"
           disabled={loading}
           style={{

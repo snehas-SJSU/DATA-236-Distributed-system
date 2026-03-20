@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Env files
+*.env
+Yelp/backend/.env
+
+# Uploads (runtime files)
+Yelp/backend/uploads/

@@ -78,10 +78,19 @@ def get_history(db: Session = Depends(get_db), current_user: User = Depends(get_
     review_outs = []
     for r in reviews:
         restaurant_name = r.restaurant.name if r.restaurant else "Unknown Restaurant"
+        restaurant_image = None
+        restaurant_photos = []
+
+        if r.restaurant:
+            restaurant_photos = r.restaurant.photos or []
+            restaurant_image = restaurant_photos[0] if restaurant_photos else r.restaurant.image
+
         review_outs.append({
             "id": r.id,
             "restaurant_id": r.restaurant_id,
             "restaurant_name": restaurant_name,
+            "restaurant_image": restaurant_image,
+            "restaurant_photos": restaurant_photos,
             "user_id": r.user_id,
             "user_name": current_user.name,
             "rating": r.rating,

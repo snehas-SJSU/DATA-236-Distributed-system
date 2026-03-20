@@ -17,6 +17,10 @@ import OwnerSignup from "./pages/OwnerSignup";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import OwnerProfile from "./pages/OwnerProfile";
 import OwnerEditRestaurant from "./pages/OwnerEditRestaurant";
+import ClaimRestaurant from "./pages/ClaimRestaurant";
+import OwnerReviewsDashboard from "./pages/OwnerReviewsDashboard";
+import OwnerAnalytics from "./pages/OwnerAnalytics";
+import OwnerAddRestaurant from "./pages/OwnerAddRestaurant";
 
 // This protects routes for logged-in users or logged-in owners.
 function PrivateRoute({ children, ownerOnly = false }) {
@@ -67,6 +71,14 @@ function AppRoutes() {
       />
       <Route
         path="/add-restaurant"
+        element={
+          <PrivateRoute>
+            <AddRestaurant />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/restaurant/:id/edit"
         element={
           <PrivateRoute>
             <AddRestaurant />
@@ -127,6 +139,38 @@ function AppRoutes() {
         element={
           <PrivateRoute ownerOnly>
             <OwnerEditRestaurant />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/owner/claim"
+        element={
+          <PrivateRoute ownerOnly>
+            <ClaimRestaurant />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/owner/reviews"
+        element={
+          <PrivateRoute ownerOnly>
+            <OwnerReviewsDashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/owner/analytics"
+        element={
+          <PrivateRoute ownerOnly>
+            <OwnerAnalytics />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/owner/restaurants/add"
+        element={
+          <PrivateRoute ownerOnly>
+            <OwnerAddRestaurant />
           </PrivateRoute>
         }
       />

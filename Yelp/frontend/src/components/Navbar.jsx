@@ -1,24 +1,50 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import SearchAutocomplete from "./SearchAutocomplete";
 import { CityAutocomplete } from "./CityAutocomplete";
 
 export default function Navbar({
   onSearch,
   defaultFind = "",
   defaultNear = "",
+  hideSearch = false,
 }) {
   const { user, owner, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [find, setFind] = useState(defaultFind);
-  const [near, setNear] = useState(defaultNear);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const getInitialNear = () => {
+    if (defaultNear) return defaultNear;
+    try {
+      const src =
+        JSON.parse(localStorage.getItem("user") || "{}").pref_locations_json ||
+        "[]";
+      return JSON.parse(src)?.[0] || "";
+    } catch {
+      return "";
+    }
+  };
 
+  const [find, setFind] = useState(defaultFind);
+  const [near, setNear] = useState(getInitialNear);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const menuRef = useRef(null);
 
   const currentAccount = owner || user;
   const isOwnerLoggedIn = !!owner;
+
+  const getUserLocation = () => {
+    try {
+      const src =
+        user?.pref_locations_json ||
+        JSON.parse(localStorage.getItem("user") || "{}").pref_locations_json ||
+        "[]";
+      return JSON.parse(src)?.[0] || "";
+    } catch {
+      return "";
+    }
+  };
 
   useEffect(() => {
     setFind(defaultFind);
@@ -29,26 +55,37 @@ export default function Navbar({
   }, [defaultNear]);
 
   useEffect(() => {
+    if (!defaultNear) {
+      const s = getUserLocation();
+      if (s) setNear(s);
+    }
+  }, [user, defaultNear]);
+
+  useEffect(() => {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-
+  const runSearch = (nextFind, nextNear) => {
     if (onSearch) {
-      onSearch({ find, near });
+      onSearch({ find: nextFind, near: nextNear });
     } else {
       navigate(
-        `/search?q=${encodeURIComponent(find || "Restaurants")}&loc=${encodeURIComponent(near || "")}`,
+        `/search?q=${encodeURIComponent(nextFind || "Restaurants")}&loc=${encodeURIComponent(
+          nextNear || ""
+        )}`
       );
     }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    runSearch(find, near);
   };
 
   const handleLogout = () => {
@@ -57,147 +94,322 @@ export default function Navbar({
     navigate(isOwnerLoggedIn ? "/owner/login" : "/login");
   };
 
-  const handleWriteReview = () => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    navigate("/write-review");
-  };
-
   const initials = currentAccount?.name
     ? currentAccount.name
-        .split(" ")
-        .map((p) => p[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
+      .split(" ")
+      .map((p) => p[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase()
     : "U";
 
   return (
-    <div
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 1000,
-        background: "#fff",
-        borderBottom: "1px solid #e8e8e8",
-        fontFamily:
-          "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "100%",
-          padding: "0 24px",
-          background: "#fff",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "20px",
-            minHeight: "72px",
-          }}
-        >
+    <nav className="sticky top-0 z-[1000] bg-white border-b border-gray-200 font-sans">
+      <div className="px-4 md:px-6">
+        <div className="flex items-center gap-3 md:gap-5 min-h-[64px] md:min-h-[72px]">
           <Link
             to={owner ? "/owner/dashboard" : "/"}
-            style={{
-              textDecoration: "none",
-              flexShrink: 0,
-              display: "flex",
-              alignItems: "center",
-            }}
+            className="flex-shrink-0 flex items-center no-underline"
           >
             <YelpLogoDark />
           </Link>
 
-          <form
-            onSubmit={handleSearch}
-            style={{
-              flex: 1,
-              maxWidth: "760px",
-              display: "flex",
-              alignItems: "center",
-              height: "44px",
-              background: "#fff",
-              border: "1px solid #dcdcdc",
-              borderRadius: "4px",
-              overflow: "visible",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-            }}
-          >
-            <div
-              style={{
-                flex: "1.5",
-                display: "flex",
-                alignItems: "center",
-                padding: "0 14px",
-                gap: "10px",
-                borderRight: "1px solid #e5e5e5",
-                minWidth: 0,
-              }}
+          {!hideSearch && (
+            <form
+              onSubmit={handleSearch}
+              className="hidden md:flex flex-1 max-w-[760px] h-11 bg-white border border-gray-300 rounded overflow-visible shadow-sm"
+              style={{ position: "relative" }}
+            >
+              <div
+                className="flex flex-[1.5] items-center px-3 gap-2 border-r border-gray-200 min-w-0"
+                style={{ position: "relative", zIndex: 40 }}
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#999"
+                  strokeWidth="2.3"
+                  className="flex-shrink-0"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+
+                <div className="flex-1 min-w-0">
+                  <SearchAutocomplete
+                    value={find}
+                    onChange={setFind}
+                    onSelect={(val) => {
+                      setFind(val);
+                    }}
+                    onClear={() => {
+                      setFind("");
+                      runSearch("", near);
+                    }}
+                    placeholder="restaurants, tacos, coffee..."
+                    inputStyle={{
+                      fontSize: "14px",
+                      height: "30px",
+                      border: "none",
+                      background: "transparent",
+                      boxShadow: "none",
+                      color: "#374151",
+                      paddingRight: find ? "22px" : "0",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div
+                className="flex flex-1 items-center px-3 gap-2 relative z-20 min-w-0"
+                style={{ overflow: "visible" }}
+              >
+                <svg
+                  width="12"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#999"
+                  strokeWidth="2.3"
+                  className="flex-shrink-0"
+                >
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                  <circle cx="12" cy="9" r="2.5" />
+                </svg>
+
+                <div className="flex-1 min-w-0">
+                  <CityAutocomplete
+                    value={near}
+                    onChange={(c) => setNear(c)}
+                    onSelect={(city) => {
+                      setNear(city);
+                    }}
+                    onClear={() => {
+                      setNear("");
+                      runSearch(find, "");
+                    }}
+                    placeholder="City..."
+                    inputStyle={{
+                      border: "none",
+                      outline: "none",
+                      fontSize: "14px",
+                      background: "transparent",
+                      padding: "4px 2px",
+                      width: "100%",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="bg-[#d32323] border-none border-l border-[#c61f1f] cursor-pointer w-[54px] h-full flex items-center justify-center flex-shrink-0 rounded-r"
+                aria-label="Search"
+              >
+                <svg
+                  width="19"
+                  height="19"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#fff"
+                  strokeWidth="2.5"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </button>
+            </form>
+          )}
+
+          {!hideSearch && (
+            <button
+              type="button"
+              onClick={() => setMobileSearchOpen((v) => !v)}
+              className="md:hidden ml-auto flex items-center justify-center w-9 h-9 rounded-full border border-gray-200 bg-gray-50"
             >
               <svg
-                width="15"
-                height="15"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#999"
-                strokeWidth="2.3"
-                style={{ flexShrink: 0 }}
+                stroke="#555"
+                strokeWidth="2.5"
               >
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
+            </button>
+          )}
 
-              <input
-                value={find}
-                onChange={(e) => setFind(e.target.value)}
-                placeholder="restaurants, tacos, coffee..."
-                style={{
-                  border: "none",
-                  outline: "none",
-                  fontSize: "15px",
-                  width: "100%",
-                  fontFamily: "inherit",
-                  color: "#333",
-                  background: "transparent",
-                  minWidth: 0,
-                }}
-              />
-            </div>
+          <div className="ml-auto flex items-center gap-1 md:gap-2 flex-shrink-0">
+            {isOwnerLoggedIn && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => navigate("/owner/restaurants/add")}
+                  className="hidden md:block text-gray-700 text-[13px] font-semibold px-3 py-1 bg-transparent border border-gray-300 rounded cursor-pointer hover:bg-gray-50 font-sans whitespace-nowrap"
+                >
+                  + Add Restaurant
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/owner/claim")}
+                  className="hidden md:block text-white text-[13px] font-semibold px-3 py-1 border-none rounded cursor-pointer font-sans whitespace-nowrap"
+                  style={{ background: "#d32323" }}
+                >
+                  + Claim Restaurant
+                </button>
+              </>
+            )}
 
-            <div
-              style={{
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-                padding: "0 12px",
-                gap: "8px",
-                position: "relative",
-                zIndex: 20,
-                minWidth: 0,
-              }}
-            >
-              <svg
-                width="12"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#999"
-                strokeWidth="2.3"
-                style={{ flexShrink: 0 }}
+            {!owner && (
+              <button
+                type="button"
+                onClick={() => navigate(user ? "/write-review" : "/login")}
+                className="hidden md:block text-gray-700 text-[13px] font-semibold px-2 py-1 bg-transparent border-none cursor-pointer hover:text-gray-900 font-sans whitespace-nowrap"
               >
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
-                <circle cx="12" cy="9" r="2.5" />
-              </svg>
+                Write a Review
+              </button>
+            )}
 
-              <div style={{ flex: 1, minWidth: 0 }}>
+            {user && (
+              <Link
+                to="/add-restaurant"
+                className="hidden md:block text-gray-700 text-[13px] font-bold px-2 py-1 no-underline hover:text-gray-900 whitespace-nowrap"
+              >
+                Add Restaurant
+              </Link>
+            )}
+
+            {currentAccount ? (
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className="w-9 h-9 rounded-full border border-gray-300 bg-gray-400 text-white flex items-center justify-center cursor-pointer font-bold text-[13px] overflow-hidden p-0"
+                >
+                  {currentAccount.profile_picture ? (
+                    <img
+                      src={currentAccount.profile_picture}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    initials
+                  )}
+                </button>
+
+                {menuOpen && (
+                  <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-xl min-w-[220px] z-[3000] overflow-hidden">
+                    {(isOwnerLoggedIn
+                      ? [
+                        { label: "Dashboard", path: "/owner/dashboard" },
+                        { label: "Analytics", path: "/owner/analytics" },
+                        { label: "Reviews", path: "/owner/reviews" },
+                        { label: "Profile", path: "/owner/profile" },
+                      ]
+                      : [
+                        { label: "Profile", path: "/profile" },
+                        { label: "Add Restaurant", path: "/add-restaurant" },
+                        { label: "Favorites", path: "/favorites" },
+                        { label: "History", path: "/history" },
+                      ]
+                    ).map(({ label, path }) => (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          navigate(path);
+                        }}
+                        className="block w-full text-left px-4 py-3 text-sm text-gray-700 bg-white border-none cursor-pointer hover:bg-gray-50 font-sans"
+                      >
+                        {label}
+                      </button>
+                    ))}
+
+                    <div className="h-px bg-gray-100" />
+
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-3 text-sm text-[#d32323] bg-white border-none cursor-pointer hover:bg-gray-50 font-sans"
+                    >
+                      Log Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="no-underline text-gray-700 border border-gray-300 rounded px-3 py-2 text-[13px] font-bold whitespace-nowrap hover:bg-gray-50"
+                >
+                  Log In
+                </Link>
+                <Link
+                  to="/signup"
+                  className="no-underline bg-[#d32323] text-white rounded px-3 py-2 text-[13px] font-bold whitespace-nowrap hover:bg-[#b51d1d]"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+
+        {!hideSearch && mobileSearchOpen && (
+          <form
+            onSubmit={(e) => {
+              handleSearch(e);
+              setMobileSearchOpen(false);
+            }}
+            className="md:hidden pb-3 flex gap-2"
+          >
+            <div
+              className="flex flex-1 bg-white border border-gray-300 rounded overflow-visible"
+              style={{ position: "relative" }}
+            >
+              <div className="flex-1 px-3 py-2 min-w-0 relative z-40">
+                <SearchAutocomplete
+                  value={find}
+                  onChange={setFind}
+                  onSelect={(val) => {
+                    setFind(val);
+                  }}
+                  onClear={() => {
+                    setFind("");
+                    runSearch("", near);
+                  }}
+                  placeholder="Search restaurants..."
+                  inputStyle={{
+                    border: "none",
+                    outline: "none",
+                    fontSize: "14px",
+                    background: "transparent",
+                    padding: "4px 2px",
+                    width: "100%",
+                  }}
+                />
+              </div>
+
+              <div
+                className="border-l border-gray-200 px-2 py-1 min-w-[100px]"
+                style={{ position: "relative", zIndex: 50 }}
+              >
                 <CityAutocomplete
                   value={near}
-                  onChange={(city) => setNear(city)}
+                  onChange={(c) => setNear(c)}
+                  onSelect={(city) => {
+                    setNear(city);
+                  }}
+                  onClear={() => {
+                    setNear("");
+                    runSearch(find, "");
+                  }}
                   placeholder="city..."
                   inputStyle={{
                     height: "30px",
@@ -215,243 +427,16 @@ export default function Navbar({
 
             <button
               type="submit"
-              style={{
-                background: "#d32323",
-                border: "none",
-                borderLeft: "1px solid #c61f1f",
-                cursor: "pointer",
-                width: "54px",
-                height: "44px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                borderRadius: "0 4px 4px 0",
-              }}
+              className="bg-[#d32323] text-white border-none rounded px-4 cursor-pointer font-bold text-sm"
             >
-              <svg
-                width="19"
-                height="19"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#fff"
-                strokeWidth="2.5"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+              Go
             </button>
           </form>
-
-          <div
-            style={{
-              marginLeft: "auto",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              flexShrink: 0,
-            }}
-          >
-            <a
-              href="#"
-              onClick={(e) => e.preventDefault()}
-              style={topLinkStyle}
-            >
-              Yelp for Business
-            </a>
-
-            {!owner && (
-              <button
-                onClick={handleWriteReview}
-                style={{
-                  ...topLinkStyle,
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                Write a Review
-              </button>
-            )}
-
-            {user && (
-              <Link
-                to="/add-restaurant"
-                style={{
-                  ...topLinkStyle,
-                  textDecoration: "none",
-                  fontWeight: "700",
-                }}
-              >
-                Add Restaurant
-              </Link>
-            )}
-
-            {currentAccount ? (
-              <div style={{ position: "relative" }} ref={menuRef}>
-                <button
-                  onClick={() => setMenuOpen((prev) => !prev)}
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "50%",
-                    border: "1px solid #ddd",
-                    background: "#aaa",
-                    color: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    fontWeight: "700",
-                    fontSize: "13px",
-                    overflow: "hidden",
-                    padding: 0,
-                  }}
-                >
-                  {currentAccount.profile_picture ? (
-                    <img
-                      src={currentAccount.profile_picture}
-                      alt="Profile"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    initials
-                  )}
-                </button>
-
-                {menuOpen && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "calc(100% + 8px)",
-                      right: 0,
-                      background: "#fff",
-                      border: "1px solid #e0e0e0",
-                      borderRadius: "10px",
-                      boxShadow: "0 10px 30px rgba(0,0,0,0.16)",
-                      minWidth: "220px",
-                      zIndex: 3000,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {(isOwnerLoggedIn
-                      ? [
-                          {
-                            label: "Owner Dashboard",
-                            path: "/owner/dashboard",
-                          },
-                          { label: "Owner Profile", path: "/owner/profile" },
-                        ]
-                      : [
-                          { label: "Profile", path: "/profile" },
-                          { label: "Add Restaurant", path: "/add-restaurant" },
-                          { label: "Favorites", path: "/favorites" },
-                          { label: "History", path: "/history" },
-                        ]
-                    ).map(({ label, path }) => (
-                      <button
-                        key={label}
-                        onClick={() => {
-                          setMenuOpen(false);
-                          navigate(path);
-                        }}
-                        style={menuItemStyle}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "#f7f7f7";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "#fff";
-                        }}
-                      >
-                        {label}
-                      </button>
-                    ))}
-
-                    <div style={{ height: "1px", background: "#eee" }} />
-
-                    <button
-                      onClick={handleLogout}
-                      style={{ ...menuItemStyle, color: "#d32323" }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "#f7f7f7";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "#fff";
-                      }}
-                    >
-                      Log Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  style={{
-                    textDecoration: "none",
-                    color: "#333",
-                    border: "1px solid #d0d0d0",
-                    borderRadius: "4px",
-                    padding: "8px 14px",
-                    fontSize: "13px",
-                    fontWeight: "700",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Log In
-                </Link>
-
-                <Link
-                  to="/signup"
-                  style={{
-                    textDecoration: "none",
-                    background: "#d32323",
-                    color: "#fff",
-                    borderRadius: "4px",
-                    padding: "8px 14px",
-                    fontSize: "13px",
-                    fontWeight: "700",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Sign Up
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
+        )}
       </div>
-    </div>
+    </nav>
   );
 }
-
-const topLinkStyle = {
-  color: "#333",
-  fontSize: "13px",
-  fontWeight: "600",
-  textDecoration: "none",
-  padding: "6px 10px",
-  whiteSpace: "nowrap",
-};
-
-const menuItemStyle = {
-  display: "block",
-  width: "100%",
-  textAlign: "left",
-  padding: "12px 16px",
-  fontSize: "14px",
-  color: "#333",
-  background: "#fff",
-  border: "none",
-  cursor: "pointer",
-  fontFamily: "inherit",
-};
 
 function YelpLogoDark() {
   return (

@@ -157,6 +157,7 @@ class RestaurantOut(BaseModel):
     is_open: bool = True
     average_rating: float = 0.0
     review_count: int = 0
+    view_count: int = 0
     owner_id: Optional[int] = None
     is_favorited: Optional[bool] = False
 
@@ -190,6 +191,9 @@ class ReviewOut(BaseModel):
     restaurant_id: int
     user_id: int
     user_name: str
+    restaurant_name: Optional[str] = None
+    restaurant_image: Optional[str] = None
+    restaurant_photos: Optional[List[str]] = None
     rating: int
     comment: Optional[str] = None
     photo_urls: Optional[List[str]] = None
@@ -217,6 +221,7 @@ class OwnerDashboardResponse(BaseModel):
     analytics: AnalyticsOut
     restaurants: List[RestaurantOut]
     recent_reviews: List[ReviewOut]
+
 
 # This section defines AI assistant chat request and response schemas.
 class AIChatMessage(BaseModel):

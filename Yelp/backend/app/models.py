@@ -55,24 +55,25 @@ class Restaurant(Base):
     __tablename__ = "restaurants"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(300), nullable=False)
-    cuisine_type = Column(String(100), nullable=False)
+    name = Column(String(300), nullable=False, index=True)
+    cuisine_type = Column(String(100), nullable=False, index=True)
     address = Column(String(300), nullable=False)
-    city = Column(String(100), nullable=False)
-    state = Column(String(20), nullable=True)
-    zip_code = Column(String(20), nullable=True)
+    city = Column(String(100), nullable=False, index=True)
+    state = Column(String(20), nullable=True, index=True)
+    zip_code = Column(String(20), nullable=True, index=True)
     contact_phone = Column(String(50), nullable=True)
     contact_email = Column(String(200), nullable=True)
     description = Column(Text, nullable=True)
     hours_text = Column(Text, nullable=True)
     photos = Column(JSON, nullable=True)
     keywords = Column(JSON, nullable=True)
-    price_range = Column(String(10), nullable=True)
+    price_range = Column(String(10), nullable=True, index=True)
     amenities = Column(JSON, nullable=True)
-    is_open = Column(Boolean, default=True)
+    is_open = Column(Boolean, default=True, index=True)
 
-    average_rating = Column(Float, default=0.0)
-    review_count = Column(Integer, default=0)
+    average_rating = Column(Float, default=0.0, index=True)
+    review_count = Column(Integer, default=0, index=True)
+    view_count = Column(Integer, default=0)
 
     added_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     owner_id = Column(Integer, ForeignKey("owners.id"), nullable=True)
@@ -97,8 +98,8 @@ class Review(Base):
     __tablename__ = "reviews"
 
     id = Column(Integer, primary_key=True, index=True)
-    restaurant_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    restaurant_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     rating = Column(Integer, nullable=False)
     comment = Column(Text, nullable=True)
     photo_urls = Column(JSON, nullable=True)
@@ -113,8 +114,8 @@ class Favorite(Base):
     __tablename__ = "favorites"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    restaurant_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    restaurant_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="favorites")

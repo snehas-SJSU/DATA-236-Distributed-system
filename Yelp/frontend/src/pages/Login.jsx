@@ -106,14 +106,14 @@ export default function Login() {
               margin: "0 0 20px",
             }}
           >
-            By continuing, you agree to Yelp&apos;s{" "}
+            {/* By continuing, you agree to Yelp&apos;s{" "}
             <a href="#" style={{ color: "#0070c9", textDecoration: "none" }}>
               Terms of Service
             </a>{" "}
             and acknowledge Yelp&apos;s{" "}
             <a href="#" style={{ color: "#0070c9", textDecoration: "none" }}>
               Privacy Policy
-            </a>.
+            </a>. */}
           </p>
 
           {error && (

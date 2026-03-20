@@ -19,7 +19,10 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const validateForm = () => {
@@ -58,6 +61,7 @@ export default function Signup() {
     }
 
     setLoading(true);
+
     try {
       const payload = {
         name: `${form.first_name.trim()} ${form.last_name.trim()}`,
@@ -76,109 +80,32 @@ export default function Signup() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f5f5f5",
-        display: "flex",
-        flexDirection: "column",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif",
-      }}
-    >
-      <header
-        style={{
-          borderBottom: "1px solid #e3e3e3",
-          padding: "14px 32px",
-          background: "#f5f5f5",
-        }}
-      >
-        <Link to="/" style={{ textDecoration: "none", display: "inline-block" }}>
+    <div className="min-h-screen bg-[#f5f5f5] flex flex-col font-sans">
+      <header className="border-b border-[#e6e6e6] bg-white px-8 py-[14px]">
+        <Link to="/" className="inline-flex no-underline">
           <YelpLogo />
         </Link>
       </header>
 
-      <main
-        style={{
-          flex: 1,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          padding: "40px 24px 60px",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "980px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "flex-start",
-            gap: "80px",
-          }}
-        >
-          <div style={{ width: "260px", flexShrink: 0 }}>
-            <h1
-              style={{
-                fontSize: "22px",
-                fontWeight: "700",
-                color: "#d32323",
-                textAlign: "center",
-                margin: "0 0 6px",
-              }}
-            >
+      <main className="flex flex-1 items-center justify-center px-5 py-8 sm:px-6 sm:py-10">
+        <div className="flex w-full max-w-[980px] items-center justify-center gap-12 lg:justify-between lg:gap-14">
+          <section className="w-full max-w-[340px] shrink-0">
+            <h1 className="mb-2 text-center text-[30px] font-bold leading-tight text-[#d32323] sm:text-[32px]">
               Sign Up for Yelp
             </h1>
 
-            <p
-              style={{
-                fontSize: "14px",
-                fontWeight: "700",
-                color: "#333",
-                textAlign: "center",
-                margin: "0 0 12px",
-              }}
-            >
+            <p className="mb-[18px] text-center text-[16px] font-bold text-[#333]">
               Connect with great local businesses
             </p>
 
-            <p
-              style={{
-                fontSize: "12px",
-                color: "#555",
-                textAlign: "center",
-                lineHeight: 1.5,
-                margin: "0 0 18px",
-              }}
-            >
-              By continuing, you agree to Yelp&apos;s{" "}
-              <a href="#" style={{ color: "#0073bb", textDecoration: "none" }}>
-                Terms of Service
-              </a>{" "}
-              and acknowledge Yelp&apos;s{" "}
-              <a href="#" style={{ color: "#0073bb", textDecoration: "none" }}>
-                Privacy Policy
-              </a>.
-            </p>
-
             {error && (
-              <div
-                style={{
-                  marginBottom: "10px",
-                  fontSize: "12px",
-                  color: "#d32323",
-                  background: "#fff5f5",
-                  border: "1px solid #f0bcbc",
-                  borderRadius: "4px",
-                  padding: "8px 10px",
-                }}
-              >
+              <div className="mb-3 rounded border border-[#f1c2c2] bg-[#fff5f5] px-3 py-[10px] text-[13px] text-[#d32323]">
                 {error}
               </div>
             )}
 
             <form onSubmit={handleSubmit} noValidate>
-              <div style={{ display: "flex", gap: "6px", marginBottom: "10px" }}>
+              <div className="mb-[10px] grid grid-cols-2 gap-2">
                 <FInput
                   type="text"
                   name="first_name"
@@ -195,7 +122,7 @@ export default function Signup() {
                 />
               </div>
 
-              <div style={{ marginBottom: "10px" }}>
+              <div className="mb-[10px]">
                 <FInput
                   type="email"
                   name="email"
@@ -205,7 +132,7 @@ export default function Signup() {
                 />
               </div>
 
-              <div style={{ marginBottom: "10px" }}>
+              <div className="mb-[10px]">
                 <FInput
                   type="password"
                   name="password"
@@ -215,7 +142,7 @@ export default function Signup() {
                 />
               </div>
 
-              <div style={{ marginBottom: "10px" }}>
+              <div className="mb-3">
                 <FInput
                   type="password"
                   name="confirm_password"
@@ -228,58 +155,28 @@ export default function Signup() {
               <button
                 type="submit"
                 disabled={loading}
-                style={{
-                  width: "100%",
-                  height: "38px",
-                  background: "#d32323",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "3px",
-                  fontSize: "15px",
-                  fontWeight: "700",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  opacity: loading ? 0.75 : 1,
-                }}
+                className="h-[42px] w-full rounded border border-[#b91c1c] bg-[#d32323] text-[16px] font-bold text-white shadow-sm transition hover:bg-[#c91f1f] disabled:cursor-not-allowed disabled:opacity-80"
               >
                 {loading ? "Signing Up..." : "Sign Up"}
               </button>
             </form>
 
-            <p
-              style={{
-                marginTop: "12px",
-                textAlign: "right",
-                fontSize: "12px",
-                color: "#999",
-              }}
-            >
+            <p className="mt-[14px] text-right text-[12px] text-[#999]">
               Already on Yelp?{" "}
               <Link
                 to="/login"
-                style={{
-                  color: "#0073bb",
-                  textDecoration: "none",
-                  fontWeight: "600",
-                }}
+                className="font-semibold text-[#0073bb] no-underline hover:underline"
               >
                 Log in
               </Link>
             </p>
-          </div>
+          </section>
 
-          <div className="yelp-signup-illus" style={{ flexShrink: 0 }}>
+          <div className="hidden min-w-[320px] flex-1 items-center justify-center lg:flex">
             <YelpSignupStorefront />
           </div>
         </div>
       </main>
-
-      <style>{`
-        .yelp-signup-illus { display: flex; }
-        @media (max-width: 900px) {
-          .yelp-signup-illus { display: none; }
-        }
-      `}</style>
     </div>
   );
 }
@@ -292,28 +189,7 @@ function FInput({ type, name, placeholder, value, onChange }) {
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      style={{
-        width: "100%",
-        height: "28px",
-        border: "1px solid #ccc",
-        borderRadius: "3px",
-        padding: "0 10px",
-        fontSize: "13px",
-        color: "#222",
-        fontFamily: "inherit",
-        background: "#fff",
-        display: "block",
-        boxSizing: "border-box",
-      }}
-      onFocus={(e) => {
-        e.target.style.borderColor = "#0073bb";
-        e.target.style.outline = "none";
-        e.target.style.boxShadow = "0 0 0 2px rgba(0,115,187,0.12)";
-      }}
-      onBlur={(e) => {
-        e.target.style.borderColor = "#ccc";
-        e.target.style.boxShadow = "none";
-      }}
+      className="block h-10 w-full rounded border border-[#c8c8c8] bg-white px-3 text-[14px] text-[#222] outline-none transition focus:border-[#0073bb] focus:ring-2 focus:ring-[rgba(0,115,187,0.15)]"
     />
   );
 }
@@ -324,7 +200,7 @@ function YelpLogo() {
       <text
         x="0"
         y="29"
-        fontFamily="Georgia,'Times New Roman',serif"
+        fontFamily="Georgia, 'Times New Roman', serif"
         fontSize="30"
         fontWeight="700"
         fill="#000"
@@ -352,7 +228,14 @@ function YelpLogo() {
 
 function YelpSignupStorefront() {
   return (
-    <svg width="360" height="360" viewBox="0 0 360 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="320"
+      height="320"
+      viewBox="0 0 360 360"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-auto w-[320px]"
+    >
       <defs>
         <clipPath id="signupCircleClip">
           <circle cx="180" cy="170" r="110" />

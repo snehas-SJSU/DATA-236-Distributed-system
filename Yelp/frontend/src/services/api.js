@@ -7,14 +7,12 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// This adds the saved token to every request automatically.
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// This section handles signup and login API calls.
 export const authAPI = {
   signupUser: (data) => api.post("/auth/user/signup", data),
   loginUser: (data) => api.post("/auth/user/login", data),
@@ -22,12 +20,12 @@ export const authAPI = {
   loginOwner: (data) => api.post("/auth/owner/login", data),
 };
 
-// This section handles restaurant-related API calls.
 export const restaurantAPI = {
   getAll: (params) => api.get("/restaurants", { params }),
   getById: (id) => api.get(`/restaurants/${id}`),
   create: (data) => api.post("/restaurants", data),
   update: (id, data) => api.put(`/restaurants/${id}`, data),
+  delete: (id) => api.delete(`/restaurants/${id}`),
   search: (params) => api.get("/restaurants/search", { params }),
   uploadPhotos: (id, formData) =>
     api.post(`/restaurants/${id}/photos`, formData, {
@@ -39,7 +37,6 @@ export const restaurantAPI = {
   claim: (id) => api.post(`/owner/restaurants/${id}/claim`),
 };
 
-// This section handles review-related API calls.
 export const reviewAPI = {
   getByRestaurant: (restaurantId) =>
     api.get(`/restaurants/${restaurantId}/reviews`),
@@ -53,7 +50,6 @@ export const reviewAPI = {
     }),
 };
 
-// This section handles normal user profile API calls.
 export const profileAPI = {
   getProfile: () => api.get("/user/profile"),
   updateProfile: (data) => api.put("/user/profile", data),
@@ -65,7 +61,6 @@ export const profileAPI = {
     }),
 };
 
-// This section handles owner-only API calls.
 export const ownerAPI = {
   dashboard: () => api.get("/owner/dashboard"),
   getProfile: () => api.get("/owner/profile"),
@@ -73,11 +68,17 @@ export const ownerAPI = {
   createRestaurant: (data) => api.post("/owner/restaurants", data),
   claimRestaurant: (id) => api.post(`/owner/restaurants/${id}/claim`),
   updateRestaurant: (id, data) => api.put(`/owner/restaurants/${id}`, data),
+  uploadRestaurantPhotos: (id, formData) =>
+    api.post(`/owner/restaurants/${id}/photos`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  getRestaurantReviews: (id, params) =>
+    api.get(`/owner/restaurants/${id}/reviews`, { params }),
 };
 
-// This section handles AI assistant chat calls.
 export const aiAPI = {
   chat: (data) => api.post("/ai-assistant/chat", data),
 };
 
+export { api };
 export default api;

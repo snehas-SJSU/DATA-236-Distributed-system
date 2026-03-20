@@ -28,7 +28,7 @@ export default function RestaurantSearchCard({ restaurant, index }) {
         >
           <img
             src={restaurant.image}
-            alt={restaurant.name}
+            alt={`${restaurant.name} restaurant photo`}
             style={{
               width: "100%",
               height: "100%",
