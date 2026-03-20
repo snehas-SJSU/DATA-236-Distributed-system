@@ -331,8 +331,11 @@ def chat_with_ai(
     # Parse user intent with LangChain first, then fall back to the local parser.
     try:
         parsed_intent = parse_user_intent_with_langchain(effective_message)
-    except Exception:
+        print("Using LangChain parser")
+    except Exception as e:
+        print("LangChain parser error:", str(e))
         parsed_intent = parse_user_intent(effective_message)
+        print("Falling back to local parser")
 
     parsed_intent = apply_follow_up_overrides(message, parsed_intent)
     needs_live_info = needs_live_context(effective_message)

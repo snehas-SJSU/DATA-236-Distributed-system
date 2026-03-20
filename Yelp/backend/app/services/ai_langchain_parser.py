@@ -1,20 +1,13 @@
-import os
 import json
 
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 
 
-# Build a LangChain-based parser for restaurant intent extraction.
+# Parse restaurant intent with LangChain + Groq.
 def parse_user_intent_with_langchain(message: str) -> dict:
-    api_key = os.getenv("OPENAI_API_KEY")
-
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY is missing")
-
-    llm = ChatOpenAI(
-        model="gpt-4o-mini",
+    llm = ChatGroq(
+        model="llama-3.1-8b-instant",
         temperature=0,
-        api_key=api_key,
     )
 
     prompt = f"""

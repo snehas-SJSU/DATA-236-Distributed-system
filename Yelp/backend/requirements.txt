@@ -10,4 +10,4 @@ pillow==11.0.0
 python-dotenv==1.0.1
 tavily-python==0.5.0
 langchain
-langchain-openai
+langchain-groq
