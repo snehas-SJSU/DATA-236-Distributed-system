@@ -6,3 +6,16 @@
 **/.env.*
 **/*.env
 **/*.env.*
+
+# local tooling / editor noise
+.agents/
+.claude/
+.code-review-graph/
+.cursorrules
+.mcp.json
+.windsurfrules
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+skills-lock.json
+.DS_Store
