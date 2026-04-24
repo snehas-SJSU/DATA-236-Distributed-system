@@ -1,8 +1,12 @@
+/**
+ * App chrome: logo, find/near (optional), account menu, mobile drawer search.
+ */
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import SearchAutocomplete from "./SearchAutocomplete";
 import { CityAutocomplete } from "./CityAutocomplete";
+import { toSearchPath } from "../utils/searchUrl";
 
 export default function Navbar({
   onSearch,
@@ -75,11 +79,7 @@ export default function Navbar({
     if (onSearch) {
       onSearch({ find: nextFind, near: nextNear });
     } else {
-      navigate(
-        `/search?q=${encodeURIComponent(nextFind || "Restaurants")}&loc=${encodeURIComponent(
-          nextNear || ""
-        )}`
-      );
+      navigate(toSearchPath({ q: nextFind, loc: nextNear }));
     }
   };
 
@@ -104,7 +104,7 @@ export default function Navbar({
     : "U";
 
   return (
-    <nav className="sticky top-0 z-[1000] bg-white border-b border-gray-200 font-sans">
+    <nav className="sticky top-0 z-[1000] bg-white/90 backdrop-blur-md border-b border-gray-200/80 shadow-sm font-sans">
       <div className="px-4 md:px-6">
         <div className="flex items-center gap-3 md:gap-5 min-h-[64px] md:min-h-[72px]">
           <Link
@@ -148,7 +148,7 @@ export default function Navbar({
                       setFind("");
                       runSearch("", near);
                     }}
-                    placeholder="restaurants, tacos, coffee..."
+                    placeholder="Cuisine, dish, or restaurant…"
                     inputStyle={{
                       fontSize: "14px",
                       height: "30px",
@@ -265,13 +265,22 @@ export default function Navbar({
             )}
 
             {!owner && (
-              <button
-                type="button"
-                onClick={() => navigate(user ? "/write-review" : "/login")}
-                className="hidden md:block text-gray-700 text-[13px] font-semibold px-2 py-1 bg-transparent border-none cursor-pointer hover:text-gray-900 font-sans whitespace-nowrap"
-              >
-                Write a Review
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => navigate("/owner/login")}
+                  className="hidden md:block text-gray-700 text-[13px] font-semibold px-2 py-1 bg-transparent border-none cursor-pointer hover:text-gray-900 font-sans whitespace-nowrap"
+                >
+                  Yelp for Business
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(user ? "/write-review" : "/login")}
+                  className="hidden md:block text-gray-700 text-[13px] font-semibold px-2 py-1 bg-transparent border-none cursor-pointer hover:text-gray-900 font-sans whitespace-nowrap"
+                >
+                  Write a Review
+                </button>
+              </>
             )}
 
             {user && (
