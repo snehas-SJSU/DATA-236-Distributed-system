@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { restaurantAPI, profileAPI } from "../services/api";
@@ -118,6 +118,63 @@ export default function Home() {
 
   const isLoggedIn = !!user;
 
+  const loadHomeData = useCallback(async () => {
+    try {
+      const res = await restaurantAPI.getAll();
+      const list = safeArray(res?.data);
+
+      if (list.length > 0) {
+        const withPhoto = list.filter((r) => safeArray(r?.photos).length > 0);
+        const slidesSource = withPhoto.length > 0 ? withPhoto : list;
+
+        const slides = slidesSource.slice(0, 4).map((r) => ({
+          id: r?.id,
+          image: safeArray(r?.photos)[0] || FALLBACK_SLIDES[0].image,
+          heading: r?.name || "Restaurant",
+          subheading: [r?.cuisine_type, r?.city].filter(Boolean).join(" · "),
+          rating: safeNumber(r?.average_rating, 0),
+          cta: "Restaurants",
+        }));
+
+        setHeroSlides(
+          slides.length >= 2 ? slides : [...slides, ...FALLBACK_SLIDES].slice(0, 4)
+        );
+      } else {
+        setHeroSlides(FALLBACK_SLIDES);
+      }
+
+      if (isLoggedIn) {
+        try {
+          const historyRes = await profileAPI.getHistory();
+          const reviews = safeArray(historyRes?.data?.reviews);
+          const recentReviewedRestaurants = normalizeHistoryReviews(reviews);
+          setFeaturedRestaurants(recentReviewedRestaurants);
+        } catch (err) {
+          console.error("Failed to load history:", err);
+          const sortedByRating = [...list]
+            .filter((r) => safeNumber(r?.average_rating, 0) >= 4)
+            .sort(
+              (a, b) =>
+                safeNumber(b?.average_rating, 0) - safeNumber(a?.average_rating, 0)
+            );
+          setFeaturedRestaurants(sortedByRating.slice(0, 3));
+        }
+      } else {
+        const sortedByRating = [...list]
+          .filter((r) => safeNumber(r?.average_rating, 0) >= 4)
+          .sort(
+            (a, b) =>
+              safeNumber(b?.average_rating, 0) - safeNumber(a?.average_rating, 0)
+          );
+        setFeaturedRestaurants(sortedByRating.slice(0, 3));
+      }
+    } catch (err) {
+      console.error("Home page load failed:", err);
+      setHeroSlides(FALLBACK_SLIDES);
+      setFeaturedRestaurants([]);
+    }
+  }, [isLoggedIn]);
+
   useEffect(() => {
     const saved = getUserLocation();
     if (saved) setNear(saved);
@@ -125,77 +182,21 @@ export default function Home() {
 
   useEffect(() => {
     dispatch(fetchRestaurants());
-    const loadHomeData = async () => {
-      try {
-        const res = await restaurantAPI.getAll();
-        const list = safeArray(res?.data);
-
-        if (list.length > 0) {
-          const withPhoto = list.filter((r) => safeArray(r?.photos).length > 0);
-          const slidesSource = withPhoto.length > 0 ? withPhoto : list;
-
-          const slides = slidesSource.slice(0, 4).map((r) => ({
-            id: r?.id,
-            image: safeArray(r?.photos)[0] || FALLBACK_SLIDES[0].image,
-            heading: r?.name || "Restaurant",
-            subheading: [r?.cuisine_type, r?.city].filter(Boolean).join(" · "),
-            rating: safeNumber(r?.average_rating, 0),
-            cta: "Restaurants",
-          }));
-
-          setHeroSlides(
-            slides.length >= 2
-              ? slides
-              : [...slides, ...FALLBACK_SLIDES].slice(0, 4)
-          );
-        } else {
-          setHeroSlides(FALLBACK_SLIDES);
-        }
-
-        if (isLoggedIn) {
-          try {
-            const historyRes = await profileAPI.getHistory();
-            const reviews = safeArray(historyRes?.data?.reviews);
-            const recentReviewedRestaurants = normalizeHistoryReviews(reviews);
-
-            if (recentReviewedRestaurants.length > 0) {
-              setFeaturedRestaurants(recentReviewedRestaurants);
-            } else {
-              setFeaturedRestaurants([]);
-            }
-          } catch (err) {
-            console.error("Failed to load history:", err);
-
-            const sortedByRating = [...list]
-              .filter((r) => safeNumber(r?.average_rating, 0) >= 4)
-              .sort(
-                (a, b) =>
-                  safeNumber(b?.average_rating, 0) -
-                  safeNumber(a?.average_rating, 0)
-              );
-
-            setFeaturedRestaurants(sortedByRating.slice(0, 3));
-          }
-        } else {
-          const sortedByRating = [...list]
-            .filter((r) => safeNumber(r?.average_rating, 0) >= 4)
-            .sort(
-              (a, b) =>
-                safeNumber(b?.average_rating, 0) -
-                safeNumber(a?.average_rating, 0)
-            );
-
-          setFeaturedRestaurants(sortedByRating.slice(0, 3));
-        }
-      } catch (err) {
-        console.error("Home page load failed:", err);
-        setHeroSlides(FALLBACK_SLIDES);
-        setFeaturedRestaurants([]);
-      }
-    };
-
     loadHomeData();
-  }, [isLoggedIn]);
+  }, [dispatch, loadHomeData]);
+
+  useEffect(() => {
+    const refreshOnFocus = () => loadHomeData();
+    const refreshOnVisible = () => {
+      if (document.visibilityState === "visible") loadHomeData();
+    };
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnVisible);
+    return () => {
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnVisible);
+    };
+  }, [loadHomeData]);
 
   useEffect(() => {
     if (!heroSlides.length) return;
