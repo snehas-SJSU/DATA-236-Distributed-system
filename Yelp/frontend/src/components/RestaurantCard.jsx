@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import StarRating from "./StarRating";
-import { restaurantAPI, ownerAPI } from "../services/api";
+import { restaurantAPI, ownerAPI, toAbsoluteMediaUrl } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
 const PLACEHOLDER_COLORS = [
@@ -47,6 +47,9 @@ export default function RestaurantCard({ restaurant, index = 0, showNumber = tru
   const priceColor = { $:"text-green-700", $$:"text-orange-600", $$$:"text-red-700", $$$$:"text-red-900" };
   const isClaimableByOwner = !!owner && !restaurant.owner_id;
   const isAlreadyClaimed   = !!restaurant.owner_id;
+  const photoSrc = toAbsoluteMediaUrl(
+    restaurant.photos?.[0] || restaurant.photo_url || restaurant.image
+  );
 
   return (
     <div className="flex gap-3 py-4 border-b border-gray-100">
@@ -60,8 +63,8 @@ export default function RestaurantCard({ restaurant, index = 0, showNumber = tru
       <Link to={`/restaurant/${restaurant.id}`} className="no-underline flex-shrink-0">
         <div className="w-[120px] h-[90px] sm:w-[166px] sm:h-[124px] rounded overflow-hidden flex items-center justify-center"
           style={{ background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})` }}>
-          {restaurant.photos?.[0] || restaurant.photo_url || restaurant.image ? (
-            <img src={restaurant.photos?.[0] || restaurant.photo_url || restaurant.image}
+          {photoSrc ? (
+            <img src={photoSrc}
               alt={`${restaurant.name} restaurant photo`}
               className="w-full h-full object-cover" />
           ) : (

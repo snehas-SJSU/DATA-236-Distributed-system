@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import StarRating from "../components/StarRating";
-import { restaurantAPI, reviewAPI } from "../services/api";
+import { restaurantAPI, reviewAPI, toAbsoluteMediaUrl } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
 export default function RestaurantDetails() {
@@ -137,7 +137,7 @@ export default function RestaurantDetails() {
     );
   }
 
-  const heroImage = restaurant.photos?.[0] || restaurant.image;
+  const heroImage = toAbsoluteMediaUrl(restaurant.photos?.[0] || restaurant.image);
 
   const visibleKeywords = showAllTags
     ? restaurant.keywords || []
@@ -230,7 +230,7 @@ export default function RestaurantDetails() {
             {restaurant.photos.slice(1, 5).map((photo, idx) => (
               <img
                 key={idx}
-                src={photo}
+                src={toAbsoluteMediaUrl(photo)}
                 alt={`${restaurant.name} photo ${idx + 2}`}
                 style={{
                   height: 120,
@@ -597,7 +597,7 @@ export default function RestaurantDetails() {
                             {review.photo_urls.map((url, i) => (
                               <img
                                 key={i}
-                                src={url}
+                                src={toAbsoluteMediaUrl(url)}
                                 alt={`Review photo ${i + 1}`}
                                 style={{
                                   height: 80,
