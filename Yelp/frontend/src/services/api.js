@@ -7,6 +7,14 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+export const toAbsoluteMediaUrl = (url) => {
+  if (!url || typeof url !== "string") return url;
+  if (/^https?:\/\//i.test(url) || url.startsWith("data:")) return url;
+  const base = API_BASE_URL.replace(/\/+$/, "");
+  const path = url.startsWith("/") ? url : `/${url}`;
+  return `${base}${path}`;
+};
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
