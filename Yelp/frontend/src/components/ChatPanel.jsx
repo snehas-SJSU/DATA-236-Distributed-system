@@ -510,7 +510,7 @@ export default function ChatPanel() {
       </div>
 
       {/* Quick action chips — just above input bar */}
-      {history.length === 0 && (
+      {(
         <div
           style={{
             display: "flex",
@@ -527,6 +527,7 @@ export default function ChatPanel() {
               key={action}
               type="button"
               onClick={() => sendMessage(action)}
+              disabled={loading}
               style={{
                 background: "#fff",
                 border: "1px solid #d6dce5",
@@ -534,8 +535,8 @@ export default function ChatPanel() {
                 padding: "7px 11px",
                 fontSize: "11px",
                 fontWeight: "600",
-                color: "#4f5968",
-                cursor: "pointer",
+                color: loading ? "#aaa" : "#4f5968",
+                cursor: loading ? "not-allowed" : "pointer",
                 fontFamily: "inherit",
               }}
             >
