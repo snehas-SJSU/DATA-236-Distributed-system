@@ -197,12 +197,16 @@ def migrate():
             if db.favorites.find_one({"_id": _id}):
                 skipped["favorites"] += 1
                 continue
-            db.favorites.insert_one({
-                "_id": _id,
-                "user_id": f"user_{row['user_id']}",
-                "restaurant_id": f"rest_{row['restaurant_id']}",
-                "created_at": row.get("created_at") or datetime.utcnow(),
-            })
+            try:
+                db.favorites.insert_one({
+                    "_id": _id,
+                    "user_id": f"user_{row['user_id']}",
+                    "restaurant_id": f"rest_{row['restaurant_id']}",
+                    "created_at": row.get("created_at") or datetime.utcnow(),
+                })
+            except Exception:
+                skipped["favorites"] += 1
+                continue
             migrated["favorites"] += 1
         print(f"  Favorites: {migrated['favorites']} migrated, {skipped['favorites']} skipped")
 
