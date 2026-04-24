@@ -56,17 +56,6 @@ npm run dev
 
 App runs at `http://localhost:5173`
 
-### Migrating data from Lab 1 MySQL
-
-If you have existing data in MySQL from Lab 1, run:
-
-```bash
-cd Yelp/backend
-python migrate_to_mongodb.py
-```
-
-This reads your MySQL data and writes it to MongoDB. Safe to run multiple times — it skips records that already exist.
-
 ---
 
 ## Running with Docker
@@ -85,6 +74,38 @@ docker compose up --build -d
 | Owner service | http://localhost:8002 |
 | Restaurant service | http://localhost:8003 |
 | Review service | http://localhost:8004 |
+
+### Seed demo data (fresh install)
+
+After starting with Docker, the database is empty. Run the seed script to populate 5 restaurants with photos, reviews, and demo accounts:
+
+```bash
+cd Yelp/backend
+pip install pymongo bcrypt python-dotenv
+python seed_mongodb.py
+```
+
+Demo login credentials after seeding:
+
+| Role | Email | Password |
+|------|-------|----------|
+| User | alex@demo.com | demo123 |
+| User | maria@demo.com | demo123 |
+| Owner | owner@demo.com | owner123 |
+
+The seed script is safe to run multiple times — it skips records that already exist.
+
+### Migrate from Lab 1 MySQL (optional)
+
+If you have existing data in MySQL from Lab 1, you can migrate it instead of seeding:
+
+```bash
+cd Yelp/backend
+DATABASE_URL=mysql+pymysql://user:password@localhost:3306/your_db \
+MONGO_URL=mongodb://localhost:27017 \
+DATABASE_NAME=yelp_db \
+python migrate_to_mongodb.py
+```
 
 ---
 
