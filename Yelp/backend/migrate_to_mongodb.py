@@ -63,8 +63,24 @@ def migrate():
     mongo_client = MongoClient(MONGO_URL)
     db = mongo_client[DATABASE_NAME]
 
-    migrated = {"users": 0, "owners": 0, "restaurants": 0, "reviews": 0, "favorites": 0}
-    skipped = {"users": 0, "owners": 0, "restaurants": 0, "reviews": 0, "favorites": 0}
+    migrated = {
+        "users": 0,
+        "owners": 0,
+        "restaurants": 0,
+        "reviews": 0,
+        "favorites": 0,
+        "sessions": 0,
+        "activity_logs": 0,
+    }
+    skipped = {
+        "users": 0,
+        "owners": 0,
+        "restaurants": 0,
+        "reviews": 0,
+        "favorites": 0,
+        "sessions": 0,
+        "activity_logs": 0,
+    }
 
     with mysql_conn.cursor() as cur:
 
@@ -210,6 +226,64 @@ def migrate():
             migrated["favorites"] += 1
         print(f"  Favorites: {migrated['favorites']} migrated, {skipped['favorites']} skipped")
 
+        # ── Sessions ──────────────────────────────────────────────────────────
+        print("Migrating sessions...")
+        try:
+            cur.execute("SELECT * FROM sessions")
+            for row in cur.fetchall():
+                # Use DB token as stable unique key if present.
+                token = row.get("token")
+                if not token:
+                    skipped["sessions"] += 1
+                    continue
+                _id = f"session_{row.get('id')}" if row.get("id") is not None else f"session_{token[:16]}"
+                if db.sessions.find_one({"token": token}):
+                    skipped["sessions"] += 1
+                    continue
+
+                db.sessions.insert_one({
+                    "_id": _id,
+                    "user_id": row.get("user_id"),
+                    "role": row.get("role", "user"),
+                    "token": token,
+                    "expires_at": row.get("expires_at") or datetime.utcnow(),
+                })
+                migrated["sessions"] += 1
+        except Exception as e:
+            print(f"  Sessions table not found or error: {e}")
+        print(f"  Sessions: {migrated['sessions']} migrated, {skipped['sessions']} skipped")
+
+        # ── Activity Logs ─────────────────────────────────────────────────────
+        print("Migrating activity_logs...")
+        try:
+            cur.execute("SELECT * FROM activity_logs")
+            for row in cur.fetchall():
+                _id = f"activity_{row['id']}" if row.get("id") is not None else None
+                if _id and db.activity_logs.find_one({"_id": _id}):
+                    skipped["activity_logs"] += 1
+                    continue
+
+                doc = {
+                    "event": row.get("event"),
+                    "timestamp": row.get("timestamp") or row.get("created_at") or datetime.utcnow(),
+                    "user_id": row.get("user_id"),
+                    "owner_id": row.get("owner_id"),
+                    "restaurant_id": row.get("restaurant_id"),
+                    "review_id": row.get("review_id"),
+                    "status": row.get("status"),
+                    "details": row.get("details"),
+                }
+                if _id:
+                    doc["_id"] = _id
+                db.activity_logs.insert_one(doc)
+                migrated["activity_logs"] += 1
+        except Exception as e:
+            print(f"  Activity logs table not found or error: {e}")
+        print(
+            f"  Activity logs: {migrated['activity_logs']} migrated, "
+            f"{skipped['activity_logs']} skipped"
+        )
+
     mysql_conn.close()
 
     # ── Create indexes after migration ────────────────────────────────────────
@@ -221,6 +295,10 @@ def migrate():
     db.restaurants.create_index([("average_rating", -1)])
     db.reviews.create_index("restaurant_id")
     db.reviews.create_index("user_id")
+    db.sessions.create_index("token")
+    db.sessions.create_index("expires_at", expireAfterSeconds=0)
+    db.activity_logs.create_index("event")
+    db.activity_logs.create_index("timestamp")
 
     print("\n Migration complete!")
     print(f"  Users:       {migrated['users']}")
@@ -228,6 +306,8 @@ def migrate():
     print(f"  Restaurants: {migrated['restaurants']}")
     print(f"  Reviews:     {migrated['reviews']}")
     print(f"  Favorites:   {migrated['favorites']}")
+    print(f"  Sessions:    {migrated['sessions']}")
+    print(f"  Activity:    {migrated['activity_logs']}")
     print("\n Note: Existing MySQL passwords work as-is (bcrypt already applied).")
     print(" You can log in with your original email and password.")
 
