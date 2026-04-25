@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { chatAPI } from "../services/api";
+import { chatAPI, toAbsoluteMediaUrl } from "../services/api";
 
 const QUICK_ACTIONS = [
   "Find dinner tonight 🍽️",
@@ -12,6 +12,9 @@ const QUICK_ACTIONS = [
 
 const DEFAULT_RESTAURANT_IMAGE =
   "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80";
+
+const getRecommendationId = (restaurant) =>
+  restaurant?.id || restaurant?.restaurant_id || restaurant?._id || null;
 
 export default function ChatBot({ onClose }) {
   const [messages, setMessages] = useState([
@@ -118,11 +121,11 @@ export default function ChatBot({ onClose }) {
 
   const getRestaurantImage = (restaurant) => {
     if (restaurant?.photos?.length > 0) {
-      return restaurant.photos[0];
+      return toAbsoluteMediaUrl(restaurant.photos[0]);
     }
 
     if (restaurant?.image) {
-      return restaurant.image;
+      return toAbsoluteMediaUrl(restaurant.image);
     }
 
     return DEFAULT_RESTAURANT_IMAGE;
@@ -300,8 +303,15 @@ export default function ChatBot({ onClose }) {
                   {msg.restaurants.map((r, ri) => (
                     <Link
                       key={ri}
-                      to={`/restaurant/${r.id}`}
-                      style={{ textDecoration: "none" }}
+                      to={getRecommendationId(r) ? `/restaurant/${getRecommendationId(r)}` : "#"}
+                      onClick={(e) => {
+                        if (!getRecommendationId(r)) e.preventDefault();
+                      }}
+                      style={{
+                        textDecoration: "none",
+                        pointerEvents: getRecommendationId(r) ? "auto" : "none",
+                        opacity: getRecommendationId(r) ? 1 : 0.65,
+                      }}
                     >
                       <div
                         style={{

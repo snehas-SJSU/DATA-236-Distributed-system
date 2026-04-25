@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from ..database import (
     restaurants_collection,
     reviews_collection,
+    review_events_collection,
     favorites_collection,
     users_collection,
 )
@@ -380,6 +381,22 @@ async def create_review(
             "comment": data.comment,
             "created_at": now.isoformat(),
         },
+    )
+
+    # Frontend can poll this status until the worker confirms processing.
+    await review_events_collection.update_one(
+        {"review_id": review_id},
+        {
+            "$set": {
+                "review_id": review_id,
+                "event": "review.created",
+                "status": "queued",
+                "restaurant_id": restaurant_id,
+                "user_id": current_user.id,
+                "updated_at": now,
+            }
+        },
+        upsert=True,
     )
 
     return {
