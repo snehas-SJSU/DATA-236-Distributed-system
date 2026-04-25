@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { aiAPI } from "../services/api";
+import { aiAPI, toAbsoluteMediaUrl } from "../services/api";
 
 const QUICK_ACTIONS = [
   "Find dinner tonight",
@@ -21,6 +21,10 @@ function decorateAssistantReply(text = "") {
   if (lower.includes("tonight")) return `${text} 🌙`;
   if (lower.includes("right now")) return `${text} ⏰`;
   return text;
+}
+
+function getRecommendationId(restaurant) {
+  return restaurant?.id || restaurant?.restaurant_id || restaurant?._id || null;
 }
 
 export default function ChatPanel() {
@@ -362,17 +366,20 @@ export default function ChatPanel() {
 
                       <div style={{ display: "grid", gap: "8px" }}>
                         {item.recommendations.map((restaurant) => {
+                          const restaurantId = getRecommendationId(restaurant);
                           const cardImage =
-                            restaurant.photos?.[0] ||
+                            toAbsoluteMediaUrl(restaurant.photos?.[0]) ||
+                            toAbsoluteMediaUrl(restaurant.image) ||
                             restaurant.image ||
                             DEFAULT_RESTAURANT_IMAGE;
                           return (
                             <button
-                              key={restaurant.id}
+                              key={restaurantId || restaurant.name}
                               type="button"
-                              onClick={() =>
-                                navigate(`/restaurant/${restaurant.id}`)
-                              }
+                              onClick={() => {
+                                if (!restaurantId) return;
+                                navigate(`/restaurant/${restaurantId}`);
+                              }}
                               style={{
                                 textAlign: "left",
                                 background: "#fff",
@@ -382,7 +389,14 @@ export default function ChatPanel() {
                                 cursor: "pointer",
                                 fontFamily: "inherit",
                                 boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+                                opacity: restaurantId ? 1 : 0.65,
                               }}
+                              disabled={!restaurantId}
+                              title={
+                                restaurantId
+                                  ? "Open restaurant details"
+                                  : "Restaurant details unavailable"
+                              }
                             >
                               <div
                                 style={{

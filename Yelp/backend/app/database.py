@@ -15,6 +15,7 @@ users_collection = db["users"]
 owners_collection = db["owners"]
 restaurants_collection = db["restaurants"]
 reviews_collection = db["reviews"]
+review_events_collection = db["review_events"]
 favorites_collection = db["favorites"]
 sessions_collection = db["sessions"]
 activity_logs_collection = db["activity_logs"]
@@ -29,6 +30,8 @@ async def create_indexes():
     await restaurants_collection.create_index([("average_rating", -1)])
     await reviews_collection.create_index("restaurant_id")
     await reviews_collection.create_index("user_id")
+    await review_events_collection.create_index("review_id", unique=True)
+    await review_events_collection.create_index("updated_at")
     await favorites_collection.create_index(
         [("user_id", 1), ("restaurant_id", 1)], unique=True
     )

@@ -5,6 +5,19 @@ import StarRating from "../components/StarRating";
 import { restaurantAPI, reviewAPI, toAbsoluteMediaUrl } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
+function normalizePhotoUrls(photoUrls) {
+  if (Array.isArray(photoUrls)) return photoUrls;
+  if (typeof photoUrls === "string") {
+    try {
+      const parsed = JSON.parse(photoUrls);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 export default function RestaurantDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -30,7 +43,11 @@ export default function RestaurantDetails() {
         reviewAPI.getByRestaurant(id),
       ]);
       setRestaurant(restRes.data);
-      setReviews(revRes.data || []);
+      const normalizedReviews = (revRes.data || []).map((review) => ({
+        ...review,
+        photo_urls: normalizePhotoUrls(review.photo_urls),
+      }));
+      setReviews(normalizedReviews);
     } catch (err) {
       setMsg(err.response?.data?.detail || "Failed to load restaurant details");
     } finally {
