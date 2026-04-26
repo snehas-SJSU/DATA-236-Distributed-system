@@ -1,11 +1,12 @@
 /**
- * Search: filters + list (SearchResultRow).
+ * Search: filters + list (SearchResultRow) + optional map (SearchMapPanel).
  * Query string drives q/loc/cuisine/keywords; results refetch when params change.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import SearchResultRow from "../components/SearchResultRow";
+import SearchMapPanel from "../components/SearchMapPanel";
 import { restaurantAPI } from "../services/api";
 
 const CUISINES = [
@@ -56,6 +57,15 @@ export default function Search() {
 
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [wide, setWide] = useState(
+    typeof window !== "undefined" && window.innerWidth >= 1024
+  );
+
+  useEffect(() => {
+    const onResize = () => setWide(window.innerWidth >= 1024);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const mergeParams = useCallback(
     (patch) => {
@@ -102,11 +112,9 @@ export default function Search() {
           keywords: effectiveKeyword || "",
           limit: 20,
         };
-
         if (PRICES.includes(priceParam)) {
           params.price_range = priceParam;
         }
-
         if (openParam) {
           params.open_now = true;
         }
@@ -179,6 +187,7 @@ export default function Search() {
     return `Restaurants${locSuffix}`;
   }, [matchedCuisine, matchedKeyword, urlQuery, locationLabel, isGenericQuery]);
 
+  const mapLocation = locationLabel || urlLocation;
   const resultSummary = loading
     ? "Searching…"
     : `${results.length} restaurant${results.length === 1 ? "" : "s"} found`;
@@ -202,22 +211,33 @@ export default function Search() {
         className="search-split"
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr",
+          gridTemplateColumns: wide ? "minmax(0, 1fr) 400px" : "1fr",
           flex: 1,
           minHeight: 0,
           maxWidth: "100%",
         }}
       >
+        {/* List column */}
         <div
           style={{
             minWidth: 0,
             overflow: "auto",
-            padding: "16px 24px 48px 28px",
-            borderRight: "none",
+            padding: wide ? "16px 24px 48px 28px" : "12px 16px 40px",
+            borderRight: wide ? "1px solid #e6e6e6" : "none",
             background: "#fff",
-            boxShadow: "none",
+            boxShadow: wide ? "inset -1px 0 0 rgba(0,0,0,0.04)" : "none",
           }}
         >
+          {!wide && (
+            <div style={{ margin: "0 -8px 16px", maxWidth: "100vw" }}>
+              <SearchMapPanel
+                locationQuery={mapLocation}
+                resultLabel={loading ? "…" : `${results.length} restaurants`}
+                compact
+              />
+            </div>
+          )}
+
           <h1
             style={{
               fontSize: 26,
@@ -229,9 +249,7 @@ export default function Search() {
           >
             {pageTitle}
           </h1>
-
           <p style={{ margin: "0 0 4px", fontSize: 14, color: "#666" }}>{resultSummary}</p>
-
           <p
             style={{
               margin: "0 0 16px",
@@ -243,6 +261,7 @@ export default function Search() {
             Only restaurants and dining — no other business types.
           </p>
 
+          {/* Restaurant filters */}
           <div
             style={{
               display: "flex",
@@ -254,17 +273,9 @@ export default function Search() {
               borderBottom: "1px solid #eee",
             }}
           >
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 800,
-                color: "#666",
-                textTransform: "uppercase",
-              }}
-            >
+            <span style={{ fontSize: 12, fontWeight: 800, color: "#666", textTransform: "uppercase" }}>
               Refine
             </span>
-
             {PRICES.map((p) => {
               const active = priceParam === p;
               return (
@@ -278,7 +289,6 @@ export default function Search() {
                 </button>
               );
             })}
-
             <button type="button" onClick={toggleOpen} style={chipStyle(openParam)}>
               Open now
             </button>
@@ -289,7 +299,6 @@ export default function Search() {
               <span style={{ color: "#d32323", fontWeight: 700 }}>{matchedCuisine}</span> results.
             </p>
           )}
-
           {matchedKeyword && (
             <p style={{ marginBottom: 8, color: "#666", fontSize: 14 }}>
               <span style={{ color: "#d32323", fontWeight: 700 }}>{matchedKeyword}</span> results.
@@ -305,10 +314,7 @@ export default function Search() {
               alignItems: "center",
             }}
           >
-            <span style={{ fontSize: 13, color: "#888", fontWeight: 700 }}>
-              Dining & features
-            </span>
-
+            <span style={{ fontSize: 13, color: "#888", fontWeight: 700 }}>Dining & features</span>
             {KEYWORDS.map((item) => {
               const active = normalize(urlQuery) === normalize(item);
               return (
@@ -322,7 +328,6 @@ export default function Search() {
                 </button>
               );
             })}
-
             {matchedKeyword && (
               <button type="button" onClick={clearKeyword} style={chipStyle(false)}>
                 Clear keyword
@@ -332,26 +337,28 @@ export default function Search() {
 
           <div style={{ marginTop: 8 }}>
             {loading ? (
-              <div style={{ textAlign: "center", color: "#aaa", padding: "56px 0" }}>
-                Loading…
-              </div>
+              <div style={{ textAlign: "center", color: "#aaa", padding: "56px 0" }}>Loading…</div>
             ) : results.length === 0 ? (
               <div style={{ textAlign: "center", color: "#999", padding: "64px 0" }}>
                 <div style={{ fontSize: 48, marginBottom: 10 }}>🍽️</div>
-                <p style={{ fontSize: 18, fontWeight: 700, color: "#555", margin: 0 }}>
-                  No results found
-                </p>
-                <p style={{ fontSize: 14, color: "#999", marginTop: 8 }}>
-                  Try different filters or location.
-                </p>
+                <p style={{ fontSize: 18, fontWeight: 700, color: "#555", margin: 0 }}>No results found</p>
+                <p style={{ fontSize: 14, color: "#999", marginTop: 8 }}>Try different filters or location.</p>
               </div>
             ) : (
-              results.map((r, i) => (
-                <SearchResultRow key={r.id} restaurant={r} index={i} />
-              ))
+              results.map((r, i) => <SearchResultRow key={r.id} restaurant={r} index={i} />)
             )}
           </div>
         </div>
+
+        {/* Map column — desktop / wide */}
+        {wide && (
+          <div style={{ minWidth: 0, position: "relative" }}>
+            <SearchMapPanel
+              locationQuery={mapLocation}
+              resultLabel={loading ? "…" : `${results.length} restaurants`}
+            />
+          </div>
+        )}
       </div>
 
       <style>{`
