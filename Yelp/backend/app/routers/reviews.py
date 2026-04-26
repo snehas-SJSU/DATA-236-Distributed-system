@@ -5,7 +5,7 @@ from datetime import datetime
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 
-from ..database import reviews_collection, review_events_collection
+from ..database import reviews_collection
 from ..schemas import ReviewUpdate
 from ..dependencies import get_current_user
 from ..kafka_producer import publish_event
@@ -49,20 +49,6 @@ async def update_review(
             "timestamp": datetime.utcnow().isoformat(),
         },
     )
-    await review_events_collection.update_one(
-        {"review_id": review_id},
-        {
-            "$set": {
-                "review_id": review_id,
-                "event": "review.updated",
-                "status": "queued",
-                "restaurant_id": review["restaurant_id"],
-                "user_id": review["user_id"],
-                "updated_at": datetime.utcnow(),
-            }
-        },
-        upsert=True,
-    )
 
     return {
         "id": review_id,
@@ -101,44 +87,8 @@ async def delete_review(
             "timestamp": datetime.utcnow().isoformat(),
         },
     )
-    await review_events_collection.update_one(
-        {"review_id": review_id},
-        {
-            "$set": {
-                "review_id": review_id,
-                "event": "review.deleted",
-                "status": "queued",
-                "restaurant_id": restaurant_id,
-                "user_id": review["user_id"],
-                "updated_at": datetime.utcnow(),
-            }
-        },
-        upsert=True,
-    )
 
     return {"message": "Review deleted"}
-
-
-@router.get("/{review_id}/status")
-async def get_review_processing_status(
-    review_id: str,
-    current_user=Depends(get_current_user),
-):
-    status_doc = await review_events_collection.find_one({"review_id": review_id})
-    if not status_doc:
-        return {"review_id": review_id, "status": "unknown"}
-
-    if status_doc.get("user_id") != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    updated_at = status_doc.get("updated_at")
-    return {
-        "review_id": review_id,
-        "event": status_doc.get("event"),
-        "status": status_doc.get("status", "unknown"),
-        "error": status_doc.get("error"),
-        "updated_at": updated_at.isoformat() if updated_at else None,
-    }
 
 
 @router.post("/{review_id}/photos")

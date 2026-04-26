@@ -16,7 +16,7 @@ spec:
       containers:
         - name: user-service
           image: yelp-user-service:latest
-          imagePullPolicy: Always
+          imagePullPolicy: Never
           ports:
             - containerPort: 8001
           envFrom:

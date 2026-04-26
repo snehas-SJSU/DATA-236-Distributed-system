@@ -16,7 +16,7 @@ spec:
       containers:
         - name: owner-service
           image: yelp-owner-service:latest
-          imagePullPolicy: Always
+          imagePullPolicy: Never
           ports:
             - containerPort: 8002
           envFrom:

@@ -70,11 +70,6 @@ def handle_review_created(db, data: dict):
         logger.info("Written review_id=%s to DB for restaurant_id=%s", review_id, restaurant_id)
 
     recalculate_rating(db, restaurant_id)
-    db["review_events"].update_one(
-        {"review_id": review_id},
-        {"$set": {"status": "processed", "event": "review.created", "updated_at": datetime.utcnow()}},
-        upsert=True,
-    )
 
 
 def handle_review_updated(db, data: dict):
@@ -91,25 +86,8 @@ def handle_review_updated(db, data: dict):
     result = db["reviews"].update_one({"_id": review_id}, {"$set": updates})
     if result.matched_count == 0:
         logger.warning("review.updated: review_id=%s not found in DB", review_id)
-        db["review_events"].update_one(
-            {"review_id": review_id},
-            {
-                "$set": {
-                    "status": "failed",
-                    "event": "review.updated",
-                    "error": "Review not found",
-                    "updated_at": datetime.utcnow(),
-                }
-            },
-            upsert=True,
-        )
     else:
         recalculate_rating(db, restaurant_id)
-        db["review_events"].update_one(
-            {"review_id": review_id},
-            {"$set": {"status": "processed", "event": "review.updated", "updated_at": datetime.utcnow()}},
-            upsert=True,
-        )
         logger.info("Updated review_id=%s in DB for restaurant_id=%s", review_id, restaurant_id)
 
 
@@ -120,11 +98,6 @@ def handle_review_deleted(db, data: dict):
     # Worker is responsible for the actual DB delete (Kafka-first pattern)
     db["reviews"].delete_one({"_id": review_id})
     recalculate_rating(db, restaurant_id)
-    db["review_events"].update_one(
-        {"review_id": review_id},
-        {"$set": {"status": "processed", "event": "review.deleted", "updated_at": datetime.utcnow()}},
-        upsert=True,
-    )
     logger.info("Deleted review_id=%s and recalculated rating for restaurant_id=%s", review_id, restaurant_id)
 
 
@@ -162,20 +135,6 @@ def main():
                 handler(db, data)
             except Exception as exc:
                 logger.error("Error handling %s: %s", topic, exc)
-                review_id = data.get("review_id")
-                if review_id:
-                    db["review_events"].update_one(
-                        {"review_id": review_id},
-                        {
-                            "$set": {
-                                "status": "failed",
-                                "event": topic,
-                                "error": str(exc),
-                                "updated_at": datetime.utcnow(),
-                            }
-                        },
-                        upsert=True,
-                    )
         else:
             logger.warning("No handler for topic: %s", topic)
 
