@@ -337,13 +337,6 @@ The Lab 2 assignment requires performance testing at `100`, `200`, `300`, `400`,
 - Throughput (requests/sec)
 - Error rate
 
-### JMeter files used
-
-- `JMeter_Login_API_AWS.jmx`
-- `Lab2_Yelp_AWS_Load_Test.jmx`
-
-The AWS load balancer endpoint was used as the base URL for these tests.
-
 ### Results
 
 | Concurrent Users | Avg Response Time (ms) | Throughput (req/sec) | Error % |
