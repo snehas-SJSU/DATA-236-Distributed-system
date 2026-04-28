@@ -218,6 +218,9 @@ Then seed data:
 cd Yelp/backend
 MONGO_URL=mongodb://localhost:27017 DATABASE_NAME=yelp_db python3 seed_mongodb.py
 ```
+<img width="943" height="395" alt="Screenshot 2026-04-28 at 10 54 32 AM" src="https://github.com/user-attachments/assets/dca89136-6be4-49cf-a80d-ab2273697861" />
+<img width="1013" height="205" alt="Screenshot 2026-04-28 at 10 54 47 AM" src="https://github.com/user-attachments/assets/66070656-66e1-44c7-ad16-8139179f6e1c" />
+
 
 ### Notes
 
@@ -270,6 +273,9 @@ Reviews follow a **Kafka-first** pattern: the API publishes the event to Kafka a
 | restaurants | Restaurant lists, search results, current restaurant |
 | reviews | Reviews per restaurant, submit/edit/delete state |
 | favorites | User's saved restaurants, add/remove |
+
+### Redux DevTools – State Changes
+<img width="536" height="603" alt="Screenshot 2026-04-28 at 10 58 02 AM" src="https://github.com/user-attachments/assets/ab4188f1-12ff-493f-8797-508c4c180e73" />
 
 ---
 
