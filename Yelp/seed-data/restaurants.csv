@@ -1,0 +1,13 @@
+restaurant_id,name,cuisine_type,address,city,state,zip_code,contact_phone,contact_email,price_range,is_open,added_by
+csv_rest_001,Golden Spoon Diner,American,101 Market St,San Jose,CA,95113,408-555-1001,goldenspoon@example.com,$$,true,csv_user_001
+csv_rest_002,Pepperoni House,Italian,22 Orchard Ave,San Jose,CA,95112,408-555-1002,pepperoni@example.com,$$,true,csv_user_002
+csv_rest_003,Dragon Wok,Chinese,500 Blossom Hill Rd,San Jose,CA,95123,408-555-1003,dragonwok@example.com,$$,true,csv_user_003
+csv_rest_004,Saffron Curry Kitchen,Indian,88 Downtown Ave,San Jose,CA,95110,408-555-1004,saffron@example.com,$$,true,csv_user_004
+csv_rest_005,Baja Tacos,Mexican,17 River Rd,Phoenix,AZ,85004,602-555-1005,bajatacos@example.com,$,true,csv_user_005
+csv_rest_006,Sakura Bento,Japanese,250 Palm St,Phoenix,AZ,85008,602-555-1006,sakura@example.com,$$$,true,csv_user_006
+csv_rest_007,Green Leaf Vegan,Vegan,77 5th Ave,San Francisco,CA,94103,415-555-1007,greenleaf@example.com,$$,true,csv_user_007
+csv_rest_008,Smoky Grill,BBQ,990 King St,Seattle,WA,98101,206-555-1008,smokygrill@example.com,$$,true,csv_user_008
+csv_rest_009,Ocean Catch Seafood,Seafood,31 Bay Blvd,San Diego,CA,92101,619-555-1009,oceancatch@example.com,$$$,true,csv_user_009
+csv_rest_010,Sunrise Brunch Cafe,Breakfast,140 Union St,Austin,TX,78701,512-555-1010,sunrise@example.com,$$,true,csv_user_010
+csv_rest_011,Ramen Dock,Japanese,66 Cedar Rd,Dallas,TX,75201,214-555-1011,ramendock@example.com,$$,true,csv_user_011
+csv_rest_012,Metro Pizza,Italian,9 Pine St,Denver,CO,80202,303-555-1012,metropizza@example.com,$,true,csv_user_012

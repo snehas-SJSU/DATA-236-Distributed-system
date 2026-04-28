@@ -1,0 +1,37 @@
+review_id,restaurant_id,user_id,rating,comment
+csv_rev_001,csv_rest_001,csv_user_002,5,Great service and portions.
+csv_rev_002,csv_rest_001,csv_user_003,4,Nice vibe and tasty food.
+csv_rev_003,csv_rest_001,csv_user_004,5,Would come back again.
+csv_rev_004,csv_rest_002,csv_user_001,4,Good pizza and quick service.
+csv_rev_005,csv_rest_002,csv_user_005,5,Excellent crust and sauce.
+csv_rev_006,csv_rest_002,csv_user_006,4,Good place for family dinner.
+csv_rev_007,csv_rest_003,csv_user_001,5,Authentic flavors and fresh ingredients.
+csv_rev_008,csv_rest_003,csv_user_007,4,Great noodles and dumplings.
+csv_rev_009,csv_rest_003,csv_user_008,5,One of the best in town.
+csv_rev_010,csv_rest_004,csv_user_002,5,Rich curry and soft naan.
+csv_rev_011,csv_rest_004,csv_user_009,4,Good portions and fast service.
+csv_rev_012,csv_rest_004,csv_user_010,5,Amazing spices and taste.
+csv_rev_013,csv_rest_005,csv_user_003,4,Tacos were fresh and flavorful.
+csv_rev_014,csv_rest_005,csv_user_011,5,Great value and fast prep.
+csv_rev_015,csv_rest_005,csv_user_012,4,Loved the salsa options.
+csv_rev_016,csv_rest_006,csv_user_004,5,Fresh fish and great ramen.
+csv_rev_017,csv_rest_006,csv_user_001,4,Cozy place and friendly staff.
+csv_rev_018,csv_rest_006,csv_user_007,5,Excellent bento set.
+csv_rev_019,csv_rest_007,csv_user_005,5,Best vegan bowl I have tried.
+csv_rev_020,csv_rest_007,csv_user_006,4,Healthy and filling meals.
+csv_rev_021,csv_rest_007,csv_user_010,5,Smoothies were outstanding.
+csv_rev_022,csv_rest_008,csv_user_003,4,Solid brisket and sides.
+csv_rev_023,csv_rest_008,csv_user_009,5,Smoky flavor was perfect.
+csv_rev_024,csv_rest_008,csv_user_012,4,Great BBQ combo plate.
+csv_rev_025,csv_rest_009,csv_user_002,5,Fresh seafood and great service.
+csv_rev_026,csv_rest_009,csv_user_004,4,Nice ocean-inspired menu.
+csv_rev_027,csv_rest_009,csv_user_011,5,Loved the grilled salmon.
+csv_rev_028,csv_rest_010,csv_user_001,4,Great brunch spot.
+csv_rev_029,csv_rest_010,csv_user_006,5,Pancakes were excellent.
+csv_rev_030,csv_rest_010,csv_user_008,4,Coffee and omelet were great.
+csv_rev_031,csv_rest_011,csv_user_005,5,Ramen broth was rich and balanced.
+csv_rev_032,csv_rest_011,csv_user_007,4,Good noodles and toppings.
+csv_rev_033,csv_rest_011,csv_user_010,5,Fast service and good taste.
+csv_rev_034,csv_rest_012,csv_user_002,4,Good slice and value.
+csv_rev_035,csv_rest_012,csv_user_003,5,Thin crust done right.
+csv_rev_036,csv_rest_012,csv_user_009,4,Quick and satisfying.
