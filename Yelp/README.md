@@ -132,6 +132,100 @@ kubectl get pods -n yelp
 
 ---
 
+## AWS Deployment (EKS)
+
+This project was also deployed to AWS EKS so the full distributed system could be demonstrated on cloud infrastructure.
+
+### 1) Create the EKS cluster
+
+```bash
+eksctl create cluster \
+  --name yelp-lab-aws-latest \
+  --region us-east-1 \
+  --nodes 2 \
+  --node-type t3.small \
+  --managed
+```
+
+Verify:
+
+```bash
+kubectl get nodes
+```
+
+### 2) Log in to ECR
+
+```bash
+export AWS_REGION=us-east-1
+export ECR_REGISTRY=896241235820.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+```
+
+### 3) Build and push Linux images from macOS
+
+Frontend:
+
+```bash
+cd Yelp/frontend
+docker buildx build --platform linux/amd64 --no-cache \
+  -f Dockerfile.aws-eks \
+  -t ${ECR_REGISTRY}/yelp-frontend:lab-latest \
+  --push .
+```
+
+Workers:
+
+```bash
+cd ../backend
+docker buildx build --platform linux/amd64 -f Dockerfile.review_worker -t ${ECR_REGISTRY}/yelp-review-worker:lab-latest --push .
+docker buildx build --platform linux/amd64 -f Dockerfile.restaurant_worker -t ${ECR_REGISTRY}/yelp-restaurant-worker:lab-latest --push .
+docker buildx build --platform linux/amd64 -f Dockerfile.user_worker -t ${ECR_REGISTRY}/yelp-user-worker:lab-latest --push .
+```
+
+### 4) Apply manifests to EKS
+
+```bash
+cd Yelp
+kubectl apply -f k8s-aws-eks/base/namespace.yaml
+kubectl apply -f k8s-aws/base/configmap.yaml
+kubectl apply -f k8s-aws/base/secret.yaml
+kubectl apply -f k8s-aws/mongodb/
+kubectl apply -f k8s-aws/kafka/
+kubectl apply -f k8s-aws/services/
+kubectl apply -f k8s-aws-eks/workers/
+kubectl apply -f k8s-aws-eks/frontend/deployment.yaml
+```
+
+Verify:
+
+```bash
+kubectl get pods -n yelp
+kubectl get svc -n yelp frontend-service
+```
+
+### 5) Seed MongoDB on AWS
+
+Port-forward MongoDB:
+
+```bash
+kubectl port-forward -n yelp svc/mongodb-service 27017:27017
+```
+
+Then seed demo data:
+
+```bash
+cd Yelp/backend
+MONGO_URL=mongodb://localhost:27017 DATABASE_NAME=yelp_db python3 seed_mongodb.py
+```
+
+### Notes
+
+- The frontend routes all API traffic through the AWS load balancer endpoint.
+- Kafka workers must be running for the review submission flow to work correctly.
+- For the AWS demo deployment, MongoDB was run with ephemeral storage to keep the setup simple.
+
+---
 ## Services overview
 
 We split the backend into 4 separate services (each has its own Dockerfile):
@@ -233,3 +327,31 @@ Reviews follow a **Kafka-first** pattern: the API publishes the event to Kafka a
 - Passwords are hashed with bcrypt (we pre-hash with SHA256 first to handle the 72-char bcrypt limit)
 - JWT sessions are stored in MongoDB with a TTL index so they auto-expire
 - SECRET_KEY is read from the `.env` file — never hardcoded
+
+---
+## JMeter Performance Testing
+
+The Lab 2 assignment requires performance testing at `100`, `200`, `300`, `400`, and `500` concurrent users while reporting:
+
+- Average response time
+- Throughput (requests/sec)
+- Error rate
+
+### JMeter files used
+
+- `JMeter_Login_API_AWS.jmx`
+- `Lab2_Yelp_AWS_Load_Test.jmx`
+
+The AWS load balancer endpoint was used as the base URL for the tests.
+
+### Results
+
+| Concurrent Users | Avg Response Time (ms) | Throughput (req/sec) | Error % |
+|------------------|------------------------|----------------------|---------|
+| 100 | 1,348 | 17.9 | 0.00% |
+| 200 | 2,462 | 17.9 | 0.00% |
+| 300 | 3,577 | 18.0 | 0.00% |
+| 400 | 4,700 | 17.8 | 0.00% |
+| 500 | 5,868 | 17.9 | 0.00% |
+
+The response-time graph from the JMeter run showed a steady increase in latency as concurrency rose from `100` to `500` users, while throughput stayed nearly flat around `18 req/sec` and error rate stayed at `0.00%` for the captured run.
