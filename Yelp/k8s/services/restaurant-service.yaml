@@ -16,7 +16,7 @@ spec:
       containers:
         - name: restaurant-service
           image: yelp-restaurant-service:latest
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 8003
           envFrom:

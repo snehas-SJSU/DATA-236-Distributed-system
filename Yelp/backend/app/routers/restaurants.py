@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from ..database import (
     restaurants_collection,
     reviews_collection,
+    review_events_collection,
     favorites_collection,
     users_collection,
 )
@@ -93,15 +94,10 @@ async def search_restaurants(
         conditions.append({"cuisine_type": {"$regex": cuisine, "$options": "i"}})
 
     if location:
-        loc_parts = [p.strip() for p in location.replace(",", " ").split() if len(p.strip()) > 1]
-        loc_or = []
-        for part in loc_parts:
-            r = {"$regex": part, "$options": "i"}
-            loc_or.extend([
-                {"city": r}, {"address": r}, {"zip_code": r}, {"state": r}
-            ])
-        if loc_or:
-            conditions.append({"$or": loc_or})
+        exact_location = location.strip()
+        conditions.append({
+            "city": {"$regex": f"^{exact_location}$", "$options": "i"}
+        })
 
     if price_range:
         conditions.append({"price_range": price_range})
@@ -380,6 +376,22 @@ async def create_review(
             "comment": data.comment,
             "created_at": now.isoformat(),
         },
+    )
+
+    # Frontend can poll this status until the worker confirms processing.
+    await review_events_collection.update_one(
+        {"review_id": review_id},
+        {
+            "$set": {
+                "review_id": review_id,
+                "event": "review.created",
+                "status": "queued",
+                "restaurant_id": restaurant_id,
+                "user_id": current_user.id,
+                "updated_at": now,
+            }
+        },
+        upsert=True,
     )
 
     return {

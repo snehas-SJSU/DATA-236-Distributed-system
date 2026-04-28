@@ -16,7 +16,7 @@ spec:
       containers:
         - name: review-service
           image: yelp-review-service:latest
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 8004
           envFrom:

@@ -6,7 +6,4 @@
 **/.env.*
 **/*.env
 **/*.env.*
-
-
 .DS_Store
-.
