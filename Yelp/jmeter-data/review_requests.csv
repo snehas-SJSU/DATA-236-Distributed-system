@@ -1,0 +1,13 @@
+email,password,restaurant_id,rating,comment
+ava@example.com,demo123,csv_rest_001,5,Great place and service.
+liam@example.com,demo123,csv_rest_002,4,Good food and clean dining.
+noah@example.com,demo123,csv_rest_003,5,Excellent flavors.
+emma@example.com,demo123,csv_rest_004,4,Nice ambiance.
+olivia@example.com,demo123,csv_rest_005,5,Fresh and tasty.
+william@example.com,demo123,csv_rest_006,4,Loved the menu variety.
+sophia@example.com,demo123,csv_rest_007,5,Great vegan options.
+james@example.com,demo123,csv_rest_008,4,Quick service and good taste.
+isabella@example.com,demo123,csv_rest_009,5,Highly recommended.
+benjamin@example.com,demo123,csv_rest_010,4,Very good brunch.
+mia@example.com,demo123,csv_rest_011,5,Great ramen broth.
+lucas@example.com,demo123,csv_rest_012,4,Nice pizza and value.

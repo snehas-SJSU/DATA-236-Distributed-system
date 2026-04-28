@@ -1,0 +1,13 @@
+user_id,name,email,password,city,state,country,languages,gender
+csv_user_001,Ava Martinez,ava@example.com,demo123,San Jose,CA,United States,English,Female
+csv_user_002,Liam Turner,liam@example.com,demo123,Phoenix,AZ,United States,English,Male
+csv_user_003,Noah Patel,noah@example.com,demo123,San Francisco,CA,United States,English,Hindi,Male
+csv_user_004,Emma Kim,emma@example.com,demo123,Seattle,WA,United States,English,Korean,Female
+csv_user_005,Olivia Reed,olivia@example.com,demo123,Austin,TX,United States,English,Female
+csv_user_006,William Scott,william@example.com,demo123,Dallas,TX,United States,English,Male
+csv_user_007,Sophia Brooks,sophia@example.com,demo123,Portland,OR,United States,English,Female
+csv_user_008,James Foster,james@example.com,demo123,Denver,CO,United States,English,Male
+csv_user_009,Isabella Price,isabella@example.com,demo123,San Diego,CA,United States,English,Female
+csv_user_010,Benjamin Lee,benjamin@example.com,demo123,Los Angeles,CA,United States,English,Male
+csv_user_011,Mia Carter,mia@example.com,demo123,San Jose,CA,United States,English,Female
+csv_user_012,Lucas Ward,lucas@example.com,demo123,Phoenix,AZ,United States,English,Male

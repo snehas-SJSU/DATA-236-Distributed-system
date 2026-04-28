@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: review-service
+  namespace: yelp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: review-service
+  template:
+    metadata:
+      labels:
+        app: review-service
+    spec:
+      containers:
+        - name: review-service
+          image: 896241235820.dkr.ecr.us-east-1.amazonaws.com/yelp-review-service:aws-v1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8004
+          envFrom:
+            - configMapRef:
+                name: yelp-config
+            - secretRef:
+                name: yelp-secrets
+          volumeMounts:
+            - name: uploads-storage
+              mountPath: /app/uploads
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            initialDelaySeconds: 20
+            periodSeconds: 10
+      volumes:
+        - name: uploads-storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: review-service
+  namespace: yelp
+spec:
+  selector:
+    app: review-service
+  ports:
+    - port: 8004
+      targetPort: 8004
+  type: ClusterIP
